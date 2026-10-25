@@ -1,0 +1,10 @@
+{
+  "description": "Helps small businesses launch and manage branded online stores, products, orders, and subscriptions with guest checkout and simple tools.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
