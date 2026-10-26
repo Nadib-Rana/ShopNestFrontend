@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react"
 import { CommerceOrder, CommerceProduct, getCommerceOrders, getCommerceProducts, saveCommerceOrder } from "./commerceStore"
 import { getStoreThemeConfig, themeDefinitions } from "./themeStore"
+import { isUserRegistered } from "./utils/auth"
 
 type Product=CommerceProduct
 type CartItem={product:Product;quantity:number;variant:string}
@@ -83,7 +84,7 @@ export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=
   else if(section==="track-order")page=<Tracking orders={getCommerceOrders()} initial={lastOrder}/>
   else if(["about","contact","shipping-policy","returns","privacy","terms"].includes(section))page=<Policy type={section} theme={theme}/>
   else page=<Home theme={{...theme,hero:customized?config.heroTitle:theme.hero,accent:customized?config.heroText:theme.accent}} products={products} go={go} slug={slug} config={customized?config:{...config,showCategories:true,showPromo:true,showTestimonials:true}}/>
-  return <div className={`customer-store theme-${theme.id} font-${customized?config.font.toLowerCase():"modern"}`} style={customized?{"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties:undefined}>{section==="preview"&&<div className="theme-preview-return" role="navigation" aria-label="Theme preview controls"><span>Previewing <strong>{theme.title}</strong></span><button aria-label={`Close ${theme.title} preview and return to Theme Gallery`} onClick={()=>{let ret="/themes";try{ret=localStorage.getItem("shopnest_preview_return")||"/themes"}catch{}go(ret)}}><span aria-hidden="true">×</span> Close Preview</button></div>}<StoreHeader {...layout}/>{page}<StoreFooter theme={theme} go={go} slug={slug} footerLayout={slug==="demo"?config.footer:"Expanded"}/></div>
+  return <div className={`customer-store theme-${theme.id} font-${customized?config.font.toLowerCase():"modern"}`} style={customized?{"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties:undefined}>{section==="preview"&&<div className="theme-preview-return" role="navigation" aria-label="Theme preview controls"><span>Previewing <strong>{theme.title}</strong></span><button aria-label={`Close ${theme.title} preview and return`} onClick={()=>{let ret=isUserRegistered()?"/seller/themes":"/themes";try{const stored=localStorage.getItem("shopnest_preview_return");if(stored){ret=stored;localStorage.removeItem("shopnest_preview_return")}}catch{}go(ret)}}><span aria-hidden="true">×</span> Close Preview</button></div>}<StoreHeader {...layout}/>{page}<StoreFooter theme={theme} go={go} slug={slug} footerLayout={slug==="demo"?config.footer:"Expanded"}/></div>
 }
 
 function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,announcementText,headerLayout="Centered",config}:{theme:typeof themeDefinitions[0];slug:string;cartCount:number;query:string;setQuery:(v:string)=>void;go:(p:string)=>void;logo:string;logoImage?:string;announcementText?:string;headerLayout?:string;config?:ReturnType<typeof getStoreThemeConfig>}){

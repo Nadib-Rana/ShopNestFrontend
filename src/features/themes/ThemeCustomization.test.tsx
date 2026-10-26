@@ -264,4 +264,25 @@ describe("Themes & Customization", () => {
     expect(storeRes.container.querySelector(".header-electronics")).toBeInTheDocument()
     expect(storeRes.getByText("Featured technology")).toBeInTheDocument()
   })
+
+  it("returns to /seller/themes when closing preview from seller dashboard", () => {
+    setRegisteredUser({ email: "seller@example.com", name: "Rana" })
+    let currentPath = "/seller/themes"
+    const go = (p: string) => { currentPath = p }
+
+    // Click Preview in seller theme gallery
+    const { getAllByText } = render(<ThemeStudio path="/seller/themes" go={go} notify={() => {}} />)
+    const previewBtns = getAllByText("Preview")
+    fireEvent.click(previewBtns[0])
+
+    expect(currentPath).toBe("/store/demo/preview")
+    expect(localStorage.getItem("shopnest_preview_return")).toBe("/seller/themes")
+
+    // In storefront preview, click Close Preview
+    const { getByText } = render(<CustomerStorefront path="/store/demo/preview" go={go} />)
+    const closeBtn = getByText("Close Preview")
+    fireEvent.click(closeBtn)
+
+    expect(currentPath).toBe("/seller/themes")
+  })
 })

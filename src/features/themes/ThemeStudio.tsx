@@ -72,7 +72,7 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
     setSaved(next);
     notify(`${themeDefinitions.find(t=>t.id===id)?.title} applied to Trendora Fashion`)
   }
-  if(!customizer)return <div className="content theme-gallery-page"><div className="section-title"><div><h2>Theme gallery</h2><p>Choose a storefront foundation. Products, orders, and settings stay unchanged.</p></div><button className="secondary" onClick={()=>go("/seller/customizer")}>Open customizer</button></div><div className="theme-gallery-grid">{themeDefinitions.map(item=><ThemeCard key={item.id} item={item} active={config.themeId===item.id} preview={()=>go(`/store/${item.slug}/preview`)} apply={()=>apply(item.id)}/>)}</div></div>
+  if(!customizer)return <div className="content theme-gallery-page"><div className="section-title"><div><h2>Theme gallery</h2><p>Choose a storefront foundation. Products, orders, and settings stay unchanged.</p></div><button className="secondary" onClick={()=>go("/seller/customizer")}>Open customizer</button></div><div className="theme-gallery-grid">{themeDefinitions.map(item=><ThemeCard key={item.id} item={item} active={config.themeId===item.id} preview={()=>{try{localStorage.setItem("shopnest_preview_return","/seller/themes")}catch{}go(`/store/${item.slug}/preview`)}} apply={()=>apply(item.id)}/>)}</div></div>
   const update=<K extends keyof StoreThemeConfig>(key:K,value:StoreThemeConfig[K])=>setConfig(current=>({...current,[key]:value}))
   const handleLogoUpload=(e:React.ChangeEvent<HTMLInputElement>)=>{
     const file=e.target.files?.[0]
