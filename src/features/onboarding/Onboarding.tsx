@@ -1,5 +1,10 @@
 import React, { useState } from "react"
 import { Icon } from "../../components/ui/Icon"
+import {
+  themeDefinitions,
+  themeDefaults,
+  saveStoreThemeConfig,
+} from "../../repositories/themeStore"
 
 function Logo() {
   return (
@@ -45,13 +50,37 @@ const onboardingSteps = [
 export function Onboarding({ path, go }: { path: string; go: (path: string) => void }) {
   const current = path.split("/").pop() || "welcome"
   const index = Math.max(0, onboardingSteps.findIndex((step) => step.key === current))
-  const [subdomain, setSubdomain] = useState("trendora")
-  const [theme, setTheme] = useState("Modern Atelier")
+
+  const initialTheme = (() => {
+    try {
+      const pending = localStorage.getItem("shopnest_pending_theme")
+      if (pending) {
+        const found = themeDefinitions.find((t) => t.id === pending)
+        if (found) return found
+      }
+    } catch {}
+    return themeDefinitions[0]
+  })()
+
+  const [subdomain, setSubdomain] = useState(initialTheme.slug || "trendora")
+  const [theme, setTheme] = useState(initialTheme.id)
   const [brand, setBrand] = useState("#4b4bc7")
-  const next = () =>
-    index === onboardingSteps.length - 1
-      ? go("/seller/overview")
-      : go(`/onboarding/${onboardingSteps[index + 1].key}`)
+  const next = () => {
+    if (index === onboardingSteps.length - 1) {
+      try {
+        const nextConfig = {
+          ...themeDefaults(theme, "demo"),
+          primary: brand,
+          status: "Published" as const,
+        }
+        saveStoreThemeConfig(nextConfig)
+        localStorage.removeItem("shopnest_pending_theme")
+      } catch {}
+      go("/seller/overview")
+    } else {
+      go(`/onboarding/${onboardingSteps[index + 1].key}`)
+    }
+  }
   const back = () =>
     index > 0 ? go(`/onboarding/${onboardingSteps[index - 1].key}`) : go("/signup")
   const invalidSubdomain = subdomain.length < 3 || !/^[a-z0-9-]+$/.test(subdomain)
@@ -218,33 +247,29 @@ function OnboardingTheme({
   theme: string
   setTheme: (v: string) => void
 }) {
-  const themes = [
-    { name: "Modern Atelier", tone: "atelier", label: "Fashion" },
-    { name: "Nordic Home", tone: "nordic", label: "Home decor" },
-    { name: "Pulse Market", tone: "pulse", label: "General retail" },
-  ]
   return (
     <section className="onboarding-panel wide-panel">
       <span className="eyebrow">STEP 4 OF 6</span>
       <h1>Choose your starting theme</h1>
       <p>Pick a direction now—you can switch or customize it anytime.</p>
       <div className="theme-grid">
-        {themes.map((item) => (
+        {themeDefinitions.map((item) => (
           <button
-            className={`theme-choice ${theme === item.name ? "selected" : ""}`}
-            onClick={() => setTheme(item.name)}
-            key={item.name}
+            type="button"
+            className={`theme-choice ${theme === item.id ? "selected" : ""}`}
+            onClick={() => setTheme(item.id)}
+            key={item.id}
           >
-            <div className={`theme-shot ${item.tone}`}>
+            <div className={`theme-shot ${item.id}`}>
               <span />
               <i />
               <b />
             </div>
             <div>
-              <strong>{item.name}</strong>
+              <strong>{item.title}</strong>
               <span>{item.label}</span>
             </div>
-            {theme === item.name && (
+            {theme === item.id && (
               <em><Icon name="check" /></em>
             )}
           </button>
@@ -303,6 +328,7 @@ function OnboardingComplete({
   brand: string
   go: (p: string) => void
 }) {
+  const currentTheme = themeDefinitions.find((t) => t.id === theme) || themeDefinitions[0]
   return (
     <section className="onboarding-panel complete-panel">
       <div className="success-orbit"><Icon name="check" size={28} /></div>
@@ -322,7 +348,7 @@ function OnboardingComplete({
         </div>
         <div>
           <span>Theme</span>
-          <strong>{theme}</strong>
+          <strong>{currentTheme.title}</strong>
           <button onClick={() => go("/onboarding/theme")}>Edit</button>
         </div>
         <div>
