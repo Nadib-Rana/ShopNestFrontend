@@ -88,13 +88,33 @@ export interface StoreThemeConfig {
   font: string
   heroTitle: string
   heroText: string
+  heroButtonText?: string
   announcementText?: string
   showCategories: boolean
+  categoriesHeading?: string
   showPromo: boolean
+  promoBadge?: string
+  promoTitle?: string
+  promoSubtitle?: string
+  showTrustRow?: boolean
   showTestimonials: boolean
+  testimonialText?: string
+  testimonialAuthor?: string
   grid: number
+  productSectionTitle?: string
+  secondaryProductSectionTitle?: string
+  cardRadius?: string
+  cardActionText?: string
+  cardShowBadge?: boolean
+  cardShowDetails?: boolean
+  cardShowPrice?: boolean
   header: "Centered" | "Compact" | "Split" | string
   footer: "Expanded" | "Minimal" | string
+  footerAbout?: string
+  footerCopyright?: string
+  newsletterHeading?: string
+  newsletterButtonText?: string
+  showNewsletter?: boolean
   status: "Draft" | "Published"
 
   // Theme-specific customization options

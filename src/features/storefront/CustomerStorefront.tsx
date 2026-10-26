@@ -84,7 +84,7 @@ export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=
   else if(section==="track-order")page=<Tracking orders={getCommerceOrders()} initial={lastOrder}/>
   else if(["about","contact","shipping-policy","returns","privacy","terms"].includes(section))page=<Policy type={section} theme={theme}/>
   else page=<Home theme={{...theme,hero:customized?config.heroTitle:theme.hero,accent:customized?config.heroText:theme.accent}} products={products} go={go} slug={slug} config={customized?config:{...config,showCategories:true,showPromo:true,showTestimonials:true}}/>
-  return <div className={`customer-store theme-${theme.id} font-${customized?config.font.toLowerCase():"modern"}`} style={customized?{"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties:undefined}>{section==="preview"&&<div className="theme-preview-return" role="navigation" aria-label="Theme preview controls"><span>Previewing <strong>{theme.title}</strong></span><button aria-label={`Close ${theme.title} preview and return`} onClick={()=>{let ret=isUserRegistered()?"/seller/themes":"/themes";try{const stored=localStorage.getItem("shopnest_preview_return");if(stored){ret=stored;localStorage.removeItem("shopnest_preview_return")}}catch{}go(ret)}}><span aria-hidden="true">×</span> Close Preview</button></div>}<StoreHeader {...layout}/>{page}<StoreFooter theme={theme} go={go} slug={slug} footerLayout={slug==="demo"?config.footer:"Expanded"}/></div>
+  return <div className={`customer-store theme-${theme.id} font-${customized?config.font.toLowerCase():"modern"}`} style={customized?{"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties:undefined}>{section==="preview"&&<div className="theme-preview-return" role="navigation" aria-label="Theme preview controls"><span>Previewing <strong>{theme.title}</strong></span><button aria-label={`Close ${theme.title} preview and return`} onClick={()=>{let ret=isUserRegistered()?"/seller/themes":"/themes";try{const stored=localStorage.getItem("shopnest_preview_return");if(stored){ret=stored;localStorage.removeItem("shopnest_preview_return")}}catch{}go(ret)}}><span aria-hidden="true">×</span> Close Preview</button></div>}<StoreHeader {...layout}/>{page}<StoreFooter theme={theme} go={go} slug={slug} footerLayout={slug==="demo"?config.footer:"Expanded"} config={slug==="demo"?config:undefined}/></div>
 }
 
 function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,announcementText,headerLayout="Centered",config}:{theme:typeof themeDefinitions[0];slug:string;cartCount:number;query:string;setQuery:(v:string)=>void;go:(p:string)=>void;logo:string;logoImage?:string;announcementText?:string;headerLayout?:string;config?:ReturnType<typeof getStoreThemeConfig>}){
@@ -277,8 +277,6 @@ function Home({theme,products,go,slug,config}:{theme:typeof themeDefinitions[0];
     ?(config.groceryOfferTag||"THIS WEEK")
     :theme.id==="decor"
     ?(config.decorRoomFocus?`${config.decorRoomFocus.toUpperCase()} FOCUS`:"ROOM FOCUS")
-    :theme.id==="furniture"
-    ?(config.furnitureSubtitle||"CRAFTED SPACES")
     :(config.retailDealHighlight||"FLASH PICKS")
 
   return <main className={`home-layout home-${theme.id}`}>
@@ -288,48 +286,81 @@ function Home({theme,products,go,slug,config}:{theme:typeof themeDefinitions[0];
         <span>{theme.label}</span>
         <h1>{theme.hero}</h1>
         <p>{theme.accent}</p>
-        <button onClick={()=>go(`/store/${slug}/products`)}>Explore collection</button>
+        <button onClick={()=>go(`/store/${slug}/products`)}>{config.heroButtonText||"Explore collection"}</button>
       </div>
     </section>
     {config.showCategories&&<section className="store-section">
       <div className="store-title">
         <span>CURATED FOR YOU</span>
-        <h2>{theme.id==="decor"?"Shop by room":theme.id==="electronics"?"Browse devices":"Shop by collection"}</h2>
+        <h2>{config.categoriesHeading||(theme.id==="decor"?"Shop by room":theme.id==="electronics"?"Browse devices":"Shop by collection")}</h2>
       </div>
       <div className="store-categories">
         {theme.categories.map((c,i)=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}><img src={theme.categoryImages[i]} alt={`${c} collection`}/><span>{c}</span></button>)}
       </div>
     </section>}
-    <ProductSection title={theme.id==="grocery"?"Weekly essentials":theme.id==="electronics"?"Featured technology":"New arrivals"} products={products} go={go} slug={slug}/>
+    <ProductSection title={config.productSectionTitle||(theme.id==="grocery"?"Weekly essentials":theme.id==="electronics"?"Featured technology":"New arrivals")} products={products} go={go} slug={slug} config={config}/>
     {config.showPromo&&<section className="store-promo">
       <div>
         <span>{promoBadge}</span>
-        <h2>{theme.promoTitle}</h2>
-        <p>{promoSubtitle}</p>
+        <h2>{config.promoTitle||theme.promoTitle}</h2>
+        <p>{config.promoSubtitle||promoSubtitle}</p>
       </div>
       <img src={theme.categoryImages[1]} alt={`${theme.name} editorial feature`}/>
     </section>}
-    <ProductSection title={theme.id==="shoes"?"Trending pairs":theme.id==="grocery"?"Popular this week":"Best sellers"} products={[...products].reverse()} go={go} slug={slug}/>
-    <section className="trust-row">
+    <ProductSection title={config.secondaryProductSectionTitle||(theme.id==="shoes"?"Trending pairs":theme.id==="grocery"?"Popular this week":"Best sellers")} products={[...products].reverse()} go={go} slug={slug} config={config}/>
+    {(config.showTrustRow??true)&&<section className="trust-row">
       <div><b>{theme.id==="electronics"?"Warranty clarity":"Simple delivery"}</b><span>Clear rates and estimated dates</span></div>
       <div><b>{theme.id==="grocery"?"Freshness first":"Thoughtful support"}</b><span>Real help from the store team</span></div>
       <div><b>Secure ordering</b><span>Guest checkout, no account needed</span></div>
-    </section>
+    </section>}
     {config.showTestimonials&&<section className="testimonial">
-      <p>“{theme.id==="furniture"?"The material details made choosing the right piece simple.":theme.id==="beauty"?"A calm, considered way to discover my daily routine.":"Beautiful products and a checkout that felt refreshingly simple."}”</p>
-      <span>Fictional customer testimonial</span>
+      <p>“{config.testimonialText||(theme.id==="furniture"?"The material details made choosing the right piece simple.":theme.id==="beauty"?"A calm, considered way to discover my daily routine.":"Beautiful products and a checkout that felt refreshingly simple.")}”</p>
+      <span>{config.testimonialAuthor||"Fictional customer testimonial"}</span>
     </section>}
   </main>
 }
-function ProductSection({title,products,go,slug}:{title:string;products:Product[];go:(p:string)=>void;slug:string}){return <section className={`store-section product-section section-${title.toLowerCase().replaceAll(" ","-")}`}><div className="store-title"><span>DISCOVER</span><h2>{title}</h2></div><div className="product-grid">{products.map(p=><ProductCard p={p} go={go} slug={slug} key={p.id}/>)}</div></section>}
-function ProductCard({p,go,slug}:{p:Product;go:(x:string)=>void;slug:string}){return <button className="store-product" onClick={()=>go(`/store/${slug}/products/${p.id}`)}><div><img src={p.image||images[0]} alt={p.name}/>{p.sale>0&&<span>SALE</span>}<em>View product</em></div><small>{p.category}</small><strong>{p.name}</strong><p>{money(p.sale||p.price)} {p.sale>0&&<del>{money(p.price)}</del>}</p><div className="product-extra"><span>{p.sizes.split(",").slice(0,3).join(" · ")}</span><b>{p.description.split("·")[0]}</b></div></button>}
-function Catalog({products,query,go,slug,category}:{products:Product[];query:string;go:(p:string)=>void;slug:string;category?:string}){
+function ProductSection({title,products,go,slug,config}:{title:string;products:Product[];go:(p:string)=>void;slug:string;config?:ReturnType<typeof getStoreThemeConfig>}){return <section className={`store-section product-section section-${title.toLowerCase().replaceAll(" ","-")}`}><div className="store-title"><span>DISCOVER</span><h2>{title}</h2></div><div className="product-grid">{products.map(p=><ProductCard p={p} go={go} slug={slug} config={config} key={p.id}/>)}</div></section>}
+function ProductCard({p,go,slug,config}:{p:Product;go:(x:string)=>void;slug:string;config?:ReturnType<typeof getStoreThemeConfig>}){
+  const cardRadius = config?.cardRadius || undefined
+  const showBadge = (config?.cardShowBadge ?? true) && p.sale > 0
+  const showPrice = config?.cardShowPrice ?? true
+  const showDetails = config?.cardShowDetails ?? true
+  const actionText = config?.cardActionText || "View product"
+
+  return (
+    <button
+      className="store-product"
+      style={cardRadius ? { borderRadius: cardRadius } : undefined}
+      onClick={()=>go(`/store/${slug}/products/${p.id}`)}
+    >
+      <div style={cardRadius ? { borderRadius: cardRadius } : undefined}>
+        <img src={p.image||images[0]} alt={p.name}/>
+        {showBadge && <span>SALE</span>}
+        <em>{actionText}</em>
+      </div>
+      <small>{p.category}</small>
+      <strong>{p.name}</strong>
+      {showPrice && (
+        <p>
+          {money(p.sale||p.price)} {showBadge && <del>{money(p.price)}</del>}
+        </p>
+      )}
+      {showDetails && (
+        <div className="product-extra">
+          <span>{p.sizes.split(",").slice(0,3).join(" · ")}</span>
+          <b>{p.description.split("·")[0]}</b>
+        </div>
+      )}
+    </button>
+  )
+}
+function Catalog({products,query,go,slug,category,config}:{products:Product[];query:string;go:(p:string)=>void;slug:string;category?:string;config?:ReturnType<typeof getStoreThemeConfig>}){
   const highest=Math.max(3000,...products.map(product=>product.sale||product.price))
   const [sort,setSort]=useState("featured"),[available,setAvailable]=useState(false),[max,setMax]=useState(highest)
   const categories=[...new Set(products.map(product=>product.category))]
   let shown=products.filter(p=>(!query||p.name.toLowerCase().includes(query.toLowerCase()))&&(!category||p.category.toLowerCase().replaceAll(" ","-")===category)&&(!available||p.stock>0)&&(p.sale||p.price)<=max)
   if(sort==="low")shown=[...shown].sort((a,b)=>(a.sale||a.price)-(b.sale||b.price))
-  return <main className="catalog"><div className="catalog-head"><span>SHOP / {category?.replaceAll("-"," ")||"ALL PRODUCTS"}</span><h1>{query?`Search results for “${query}”`:category?.replaceAll("-"," ")||"All products"}</h1><p>{shown.length} carefully selected pieces</p></div><div className="catalog-layout"><aside><h3>Filter</h3><label><input type="checkbox" checked={available} onChange={e=>setAvailable(e.target.checked)}/> In stock only</label><label>Maximum price <strong>{money(max)}</strong><input aria-label="Maximum price" type="range" min="500" max={highest} step="500" value={max} onChange={e=>setMax(Number(e.target.value))}/></label><h3>Categories</h3>{categories.map(c=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}>{c}</button>)}</aside><section><div className="catalog-tools"><span>{shown.length} products</span><select aria-label="Sort products" value={sort} onChange={e=>setSort(e.target.value)}><option value="featured">Featured</option><option value="low">Price: low to high</option></select></div>{shown.length?<div className="product-grid">{shown.map(p=><ProductCard p={p} go={go} slug={slug} key={p.id}/>)}</div>:<div className="store-empty"><b>No products match</b><span>Adjust your search or filters and try again.</span></div>}</section></div></main>
+  return <main className="catalog"><div className="catalog-head"><span>SHOP / {category?.replaceAll("-"," ")||"ALL PRODUCTS"}</span><h1>{query?`Search results for “${query}”`:category?.replaceAll("-"," ")||"All products"}</h1><p>{shown.length} carefully selected pieces</p></div><div className="catalog-layout"><aside><h3>Filter</h3><label><input type="checkbox" checked={available} onChange={e=>setAvailable(e.target.checked)}/> In stock only</label><label>Maximum price <strong>{money(max)}</strong><input aria-label="Maximum price" type="range" min="500" max={highest} step="500" value={max} onChange={e=>setMax(Number(e.target.value))}/></label><h3>Categories</h3>{categories.map(c=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}>{c}</button>)}</aside><section><div className="catalog-tools"><span>{shown.length} products</span><select aria-label="Sort products" value={sort} onChange={e=>setSort(e.target.value)}><option value="featured">Featured</option><option value="low">Price: low to high</option></select></div>{shown.length?<div className="product-grid">{shown.map(p=><ProductCard p={p} go={go} slug={slug} config={config} key={p.id}/>)}</div>:<div className="store-empty"><b>No products match</b><span>Adjust your search or filters and try again.</span></div>}</section></div></main>
 }
 function ProductDetail({product,add,go,slug}:{product:Product;add:(p:Product,v:string,q:number)=>void;go:(p:string)=>void;slug:string}){
   const [variant,setVariant]=useState(""),[qty,setQty]=useState(1),[error,setError]=useState("")
@@ -355,13 +386,20 @@ function OrderBox({cart,subtotal,shipping,total,children}:{cart:CartItem[];subto
 function Confirmation({order,go,slug}:{order:CommerceOrder|null;go:(p:string)=>void;slug:string}){if(!order)return <main className="store-empty"><b>Order not found</b></main>;return <main className="confirmation-page"><div>✓</div><span>DEMO ORDER CONFIRMED</span><h1>Thank you, {order.customer}.</h1><p>Your mock order <strong>#{order.id}</strong> has been created in this browser. No real order was transmitted.</p><section><div><h2>Delivery details</h2><p>{order.address}, {order.city}<br/>{order.phone}</p></div><div><h2>Order total</h2><strong>{money(order.total)}</strong><p>{order.payment}</p></div></section><button onClick={()=>go(`/store/${slug}/track-order`)}>Track this order</button><button onClick={()=>go(`/store/${slug}`)}>Return to store</button></main>}
 function Tracking({orders,initial}:{orders:CommerceOrder[];initial:CommerceOrder|null}){const [id,setId]=useState(initial?.id||""),[phone,setPhone]=useState(initial?.phone||""),[found,setFound]=useState<CommerceOrder|null>(initial),[searched,setSearched]=useState(false);const search=(e:FormEvent)=>{e.preventDefault();setFound(orders.find(o=>o.id.toLowerCase()===id.toLowerCase()&&o.phone.replaceAll(" ","")===phone.replaceAll(" ",""))||null);setSearched(true)};const steps=["Pending","Confirmed","Processing","Shipped","Out for delivery","Delivered"],position=Math.max(0,steps.indexOf(found?.status||"Pending"));return <main className="tracking-page"><span>ORDER TRACKING</span><h1>Where is your order?</h1><form onSubmit={search}><label>Order number<input value={id} onChange={e=>setId(e.target.value)} placeholder="SN-123456"/></label><label>Phone number<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="01XXXXXXXXX"/></label><button>Track order</button></form>{searched&&!found&&<div className="store-error">We couldn’t match that order and phone number.</div>}{found&&<section><div className="tracking-head"><div><span>Order #{found.id}</span><strong>{found.status}</strong></div><b>{money(found.total)}</b></div><div className="tracking-steps">{steps.map((s,i)=><div className={i<=position?"done":""} key={s}><i>{i<position?"✓":i+1}</i><span><strong>{s}</strong><small>{i<=position?"Prototype status recorded":"Waiting"}</small></span></div>)}</div></section>}</main>}
 function Policy({type,theme}:{type:string;theme:typeof themeDefinitions[0]}){const titles:Record<string,string>={about:`About ${theme.name}`,contact:"Contact us","shipping-policy":"Shipping policy",returns:"Returns & refunds",privacy:"Privacy policy",terms:"Terms & conditions"};return <main className="policy-page"><span>STORE INFORMATION</span><h1>{titles[type]}</h1><p>This is sample policy content for the ShopNest frontend prototype. Store owners can replace it from settings after a backend content service is connected.</p><h2>Clear, straightforward information</h2><p>We aim to make shopping simple and transparent. Delivery estimates, eligibility, and product-specific requirements are shown before checkout.</p><h2>Questions?</h2><p>Contact hello@example-store.test or call the fictional support line shown in the store settings.</p></main>}
-function StoreFooter({theme,go,slug,footerLayout}:{theme:typeof themeDefinitions[0];go:(p:string)=>void;slug:string;footerLayout?:string}){
+function StoreFooter({theme,go,slug,footerLayout,config}:{theme:typeof themeDefinitions[0];go:(p:string)=>void;slug:string;footerLayout?:string;config?:ReturnType<typeof getStoreThemeConfig>}){
   const [email,setEmail]=useState(""),[joined,setJoined]=useState(false);
+  const brandName = config?.logo || theme.name
+  const aboutText = config?.footerAbout || theme.accent
+  const copyrightText = config?.footerCopyright || `© 2025 ${brandName}. Fictional ShopNest demonstration store.`
+  const showNewsletter = config?.showNewsletter ?? true
+  const newsletterHeading = config?.newsletterHeading || "Stay in the loop"
+  const newsletterBtn = config?.newsletterButtonText || "Join newsletter"
+
   if(footerLayout==="Minimal"){
     return <footer className="store-footer store-footer-minimal">
       <div className="footer-min-brand">
-        <strong>{theme.name}</strong>
-        <p>{theme.accent}</p>
+        <strong>{brandName}</strong>
+        <p>{aboutText}</p>
       </div>
       <div className="footer-min-links">
         <button onClick={()=>go(`/store/${slug}/products`)}>All products</button>
@@ -370,10 +408,39 @@ function StoreFooter({theme,go,slug,footerLayout}:{theme:typeof themeDefinitions
         <button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button>
         <button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button>
       </div>
-      <small>© 2025 {theme.name}. Fictional ShopNest demonstration store.</small>
+      <small>{copyrightText}</small>
     </footer>
   }
-  return <footer className="store-footer"><div><strong>{theme.name}</strong><p>{theme.accent}</p></div><div><b>Shop</b><button onClick={()=>go(`/store/${slug}/products`)}>All products</button><button onClick={()=>go(`/store/${slug}/track-order`)}>Track order</button></div><div><b>Information</b><button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button><button onClick={()=>go(`/store/${slug}/shipping-policy`)}>Shipping</button><button onClick={()=>go(`/store/${slug}/returns`)}>Returns</button><button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button><button onClick={()=>go(`/store/${slug}/terms`)}>Terms</button></div><form onSubmit={e=>{e.preventDefault();if(email.includes("@"))setJoined(true)}}><b>Stay in the loop</b>{joined?<p>Thanks — newsletter signup was simulated.</p>:<><label className="sr-only" htmlFor={`newsletter-${slug}`}>Email address</label><input id={`newsletter-${slug}`} type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address"/><button>Join newsletter</button></>}</form><small>© 2025 {theme.name}. Fictional ShopNest demonstration store.</small></footer>
+  return <footer className="store-footer">
+    <div>
+      <strong>{brandName}</strong>
+      <p>{aboutText}</p>
+    </div>
+    <div>
+      <b>Shop</b>
+      <button onClick={()=>go(`/store/${slug}/products`)}>All products</button>
+      <button onClick={()=>go(`/store/${slug}/track-order`)}>Track order</button>
+    </div>
+    <div>
+      <b>Information</b>
+      <button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button>
+      <button onClick={()=>go(`/store/${slug}/shipping-policy`)}>Shipping</button>
+      <button onClick={()=>go(`/store/${slug}/returns`)}>Returns</button>
+      <button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button>
+      <button onClick={()=>go(`/store/${slug}/terms`)}>Terms</button>
+    </div>
+    {showNewsletter ? (
+      <form onSubmit={e=>{e.preventDefault();if(email.includes("@"))setJoined(true)}}>
+        <b>{newsletterHeading}</b>
+        {joined ? <p>Thanks — newsletter signup was simulated.</p> : <>
+          <label className="sr-only" htmlFor={`newsletter-${slug}`}>Email address</label>
+          <input id={`newsletter-${slug}`} type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address"/>
+          <button>{newsletterBtn}</button>
+        </>}
+      </form>
+    ) : <div />}
+    <small>{copyrightText}</small>
+  </footer>
 }
 
 export function LiveStorefrontView({
@@ -428,7 +495,7 @@ export function LiveStorefrontView({
         slug="demo"
         config={config}
       />
-      <StoreFooter theme={theme} go={go} slug="demo" footerLayout={config.footer || "Expanded"} />
+      <StoreFooter theme={theme} go={go} slug="demo" footerLayout={config.footer || "Expanded"} config={config} />
     </div>
   )
 }

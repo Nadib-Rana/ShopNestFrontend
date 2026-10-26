@@ -285,4 +285,32 @@ describe("Themes & Customization", () => {
 
     expect(currentPath).toBe("/seller/themes")
   })
+
+  it("customizes product card styling, action text, and footer content", () => {
+    saveStoreThemeConfig({
+      ...themeDefaults("fashion", "demo"),
+      cardRadius: "22px",
+      cardActionText: "Quick View",
+      productSectionTitle: "Trending Apparel 2026",
+      footerAbout: "Handmade garments designed for longevity in Dhaka.",
+      footerCopyright: "© 2026 Trendora Fashion Labs. All rights reserved.",
+      newsletterHeading: "Subscribe for VIP Drops",
+      newsletterButtonText: "Get VIP Access",
+    })
+
+    const { getByText, getAllByText, container } = render(<CustomerStorefront path="/store/demo" go={() => {}} />)
+
+    // Product Section and Card Customizations
+    expect(getByText("Trending Apparel 2026")).toBeInTheDocument()
+    expect(getAllByText("Quick View").length).toBeGreaterThan(0)
+    const firstProduct = container.querySelector(".store-product") as HTMLElement
+    expect(firstProduct).toBeInTheDocument()
+    expect(firstProduct.style.borderRadius).toBe("22px")
+
+    // Footer Customizations
+    expect(getByText("Handmade garments designed for longevity in Dhaka.")).toBeInTheDocument()
+    expect(getByText("© 2026 Trendora Fashion Labs. All rights reserved.")).toBeInTheDocument()
+    expect(getByText("Subscribe for VIP Drops")).toBeInTheDocument()
+    expect(getByText("Get VIP Access")).toBeInTheDocument()
+  })
 })

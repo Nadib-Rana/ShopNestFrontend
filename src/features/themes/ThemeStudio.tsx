@@ -232,18 +232,84 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
           </Control>
         )}
 
+        {/* Header & Announcement */}
+        <Control title="Header & Announcement">
+          <label>Announcement text<input value={config.announcementText??""} onChange={e=>update("announcementText",e.target.value)} placeholder="e.g. Complimentary delivery over ৳3,000"/></label>
+          <label>Header layout
+            <select value={config.header} onChange={e=>update("header",e.target.value)}>
+              <option value="Centered">Centered</option>
+              <option value="Compact">Compact</option>
+              <option value="Split">Split</option>
+            </select>
+          </label>
+        </Control>
+
+        {/* Branding & Logo */}
         <Control title="Branding">
           <label>Logo text<input value={config.logo} onChange={e=>update("logo",e.target.value)}/></label>
           <label>Logo upload<input type="file" accept="image/*" aria-describedby="logo-help" onChange={handleLogoUpload}/></label>
           {config.logoImage&&<div style={{display:"flex",alignItems:"center",gap:"10px",marginTop:"8px"}}><img src={config.logoImage} alt="Uploaded logo preview" style={{maxHeight:"32px",maxWidth:"120px",objectFit:"contain",border:"1px solid #dfe2e7",borderRadius:"4px",padding:"2px",background:"#fff"}}/><button type="button" className="secondary" style={{fontSize:"9px",padding:"4px 8px"}} onClick={()=>{update("logoImage","");notify("Logo image removed.")}}>Remove logo</button></div>}
           <small id="logo-help">PNG, JPG, SVG, WebP up to 2MB. Saved locally.</small>
         </Control>
+
+        {/* Hero Banner */}
+        <Control title="Hero Banner">
+          <label>Heading<textarea value={config.heroTitle} onChange={e=>update("heroTitle",e.target.value)}/></label>
+          <label>Description<textarea value={config.heroText} onChange={e=>update("heroText",e.target.value)}/></label>
+          <label>Button label<input value={config.heroButtonText??""} onChange={e=>update("heroButtonText",e.target.value)} placeholder="e.g. Explore collection"/></label>
+        </Control>
+
+        {/* Product Cards & Grid */}
+        <Control title="Product Cards & Grid">
+          <label>Grid columns
+            <select value={config.grid} onChange={e=>update("grid",Number(e.target.value))}>
+              <option value="2">2 columns</option>
+              <option value="3">3 columns</option>
+              <option value="4">4 columns</option>
+            </select>
+          </label>
+          <label>Primary section title<input value={config.productSectionTitle??""} onChange={e=>update("productSectionTitle",e.target.value)} placeholder="e.g. New arrivals"/></label>
+          <label>Secondary section title<input value={config.secondaryProductSectionTitle??""} onChange={e=>update("secondaryProductSectionTitle",e.target.value)} placeholder="e.g. Best sellers"/></label>
+          <label>Card corner radius
+            <select value={config.cardRadius??"8px"} onChange={e=>update("cardRadius",e.target.value)}>
+              <option value="0px">Sharp (0px)</option>
+              <option value="6px">Subtle (6px)</option>
+              <option value="12px">Rounded (12px)</option>
+              <option value="22px">Soft Pill (22px)</option>
+            </select>
+          </label>
+          <label>Card button label<input value={config.cardActionText??""} onChange={e=>update("cardActionText",e.target.value)} placeholder="e.g. View product"/></label>
+          <Toggle label="Show sale badges" value={config.cardShowBadge??true} change={v=>update("cardShowBadge",v)}/>
+          <Toggle label="Show product details & notes" value={config.cardShowDetails??true} change={v=>update("cardShowDetails",v)}/>
+          <Toggle label="Show prices" value={config.cardShowPrice??true} change={v=>update("cardShowPrice",v)}/>
+        </Control>
+
+        {/* Homepage Sections */}
+        <Control title="Homepage Sections">
+          <Toggle label="Categories section" value={config.showCategories} change={v=>update("showCategories",v)}/>
+          {config.showCategories&&<label>Categories heading<input value={config.categoriesHeading??""} onChange={e=>update("categoriesHeading",e.target.value)} placeholder="e.g. Shop by collection"/></label>}
+          <Toggle label="Promotional story" value={config.showPromo} change={v=>update("showPromo",v)}/>
+          {config.showPromo&&<>
+            <label>Promo title<input value={config.promoTitle??""} onChange={e=>update("promoTitle",e.target.value)} placeholder="e.g. A story worth sharing."/></label>
+            <label>Promo description<textarea value={config.promoSubtitle??""} onChange={e=>update("promoSubtitle",e.target.value)} placeholder="e.g. Details about the collection..."/></label>
+          </>}
+          <Toggle label="Trust badges row" value={config.showTrustRow??true} change={v=>update("showTrustRow",v)}/>
+          <Toggle label="Testimonials section" value={config.showTestimonials} change={v=>update("showTestimonials",v)}/>
+          {config.showTestimonials&&<>
+            <label>Testimonial quote<textarea value={config.testimonialText??""} onChange={e=>update("testimonialText",e.target.value)} placeholder="e.g. Customer testimonial quote"/></label>
+            <label>Testimonial source<input value={config.testimonialAuthor??""} onChange={e=>update("testimonialAuthor",e.target.value)} placeholder="e.g. Verified customer"/></label>
+          </>}
+        </Control>
+
+        {/* Colors */}
         <Control title="Colors">
-          <label>Primary<input type="color" value={config.primary} onChange={e=>update("primary",e.target.value)}/></label>
-          <label>Secondary<input type="color" value={config.secondary} onChange={e=>update("secondary",e.target.value)}/></label>
+          <label>Primary accent<input type="color" value={config.primary} onChange={e=>update("primary",e.target.value)}/></label>
+          <label>Secondary soft<input type="color" value={config.secondary} onChange={e=>update("secondary",e.target.value)}/></label>
           <label>Background<input type="color" value={config.background} onChange={e=>update("background",e.target.value)}/></label>
           <label>Text<input type="color" value={config.text} onChange={e=>update("text",e.target.value)}/></label>
         </Control>
+
+        {/* Typography */}
         <Control title="Typography">
           <select value={config.font} onChange={e=>update("font",e.target.value)}>
             <option>Modern</option>
@@ -251,26 +317,22 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
             <option>Friendly</option>
           </select>
         </Control>
-        <Control title="Hero">
-          <label>Heading<textarea value={config.heroTitle} onChange={e=>update("heroTitle",e.target.value)}/></label>
-          <label>Description<textarea value={config.heroText} onChange={e=>update("heroText",e.target.value)}/></label>
-        </Control>
-        <Control title="Homepage sections">
-          <Toggle label="Categories" value={config.showCategories} change={v=>update("showCategories",v)}/>
-          <Toggle label="Promotional story" value={config.showPromo} change={v=>update("showPromo",v)}/>
-          <Toggle label="Testimonials" value={config.showTestimonials} change={v=>update("showTestimonials",v)}/>
-        </Control>
-        <Control title="Product grid">
-          <select value={config.grid} onChange={e=>update("grid",Number(e.target.value))}>
-            <option value="2">2 columns</option>
-            <option value="3">3 columns</option>
-            <option value="4">4 columns</option>
-          </select>
-        </Control>
-        <Control title="Header and footer">
-          <label>Announcement text<input value={config.announcementText??""} onChange={e=>update("announcementText",e.target.value)} placeholder="e.g. Complimentary delivery over ৳3,000"/></label>
-          <label>Header<select value={config.header} onChange={e=>update("header",e.target.value)}><option>Centered</option><option>Compact</option><option>Split</option></select></label>
-          <label>Footer<select value={config.footer} onChange={e=>update("footer",e.target.value)}><option>Expanded</option><option>Minimal</option></select></label>
+
+        {/* Footer Settings */}
+        <Control title="Footer">
+          <label>Footer layout
+            <select value={config.footer} onChange={e=>update("footer",e.target.value)}>
+              <option value="Expanded">Expanded</option>
+              <option value="Minimal">Minimal</option>
+            </select>
+          </label>
+          <label>About text<textarea value={config.footerAbout??""} onChange={e=>update("footerAbout",e.target.value)} placeholder="e.g. Brand description in the footer"/></label>
+          <label>Copyright text<input value={config.footerCopyright??""} onChange={e=>update("footerCopyright",e.target.value)} placeholder="e.g. © 2025 StoreName. All rights reserved."/></label>
+          <Toggle label="Show newsletter signup" value={config.showNewsletter??true} change={v=>update("showNewsletter",v)}/>
+          {(config.showNewsletter??true)&&<>
+            <label>Newsletter title<input value={config.newsletterHeading??""} onChange={e=>update("newsletterHeading",e.target.value)} placeholder="e.g. Stay in the loop"/></label>
+            <label>Newsletter button<input value={config.newsletterButtonText??""} onChange={e=>update("newsletterButtonText",e.target.value)} placeholder="e.g. Join newsletter"/></label>
+          </>}
         </Control>
       </aside>
 
