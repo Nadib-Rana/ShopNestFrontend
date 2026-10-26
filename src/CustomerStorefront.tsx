@@ -88,13 +88,165 @@ export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=
 }
 
 function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,announcementText,headerLayout="Centered",config}:{theme:typeof themeDefinitions[0];slug:string;cartCount:number;query:string;setQuery:(v:string)=>void;go:(p:string)=>void;logo:string;logoImage?:string;announcementText?:string;headerLayout?:string;config?:ReturnType<typeof getStoreThemeConfig>}){
-  const search=(e:FormEvent)=>{e.preventDefault();go(`/store/${slug}/search`)}
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const search=(e:FormEvent)=>{e.preventDefault();setMobileMenuOpen(false);go(`/store/${slug}/search`)}
   const nav=(items=theme.categories)=><nav>{items.map(c=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}>{c}</button>)}</nav>
   const searchBox=(label="Search products")=><form className="theme-search" onSubmit={search}><input aria-label={label} value={query} onChange={e=>setQuery(e.target.value)} placeholder={label}/><button aria-label="Submit search">⌕</button></form>
   const bag=<button className="cart-link" onClick={()=>go(`/store/${slug}/cart`)}>Bag <span>{cartCount}</span></button>
   const logoContent=logoImage?<img src={logoImage} alt={logo}/>:logo
   const defaultAnnouncement="The summer edit · Complimentary delivery over ৳3,000"
   const currentAnnouncement=announcementText!==undefined&&announcementText!==""?announcementText:defaultAnnouncement
+
+  const activeCategories = theme.id === "fashion"
+    ? ["New Arrivals", "Women", "Men", "Accessories", "Sale"]
+    : theme.id === "shoes"
+    ? ["Running", "Lifestyle", "Training", "Basketball", "Sale"]
+    : theme.id === "electronics"
+    ? ["Smartphones", "Laptops", "Audio", "Gaming", "Accessories"]
+    : theme.id === "beauty"
+    ? ["Skincare", "Makeup", "Fragrance", "Body Care", "Best Sellers"]
+    : theme.id === "grocery"
+    ? ["Fruits", "Vegetables", "Dairy", "Bakery", "Snacks", "Household"]
+    : theme.id === "decor"
+    ? ["Living Room", "Bedroom", "Lighting", "Textiles", "Wall Decor", "Collections"]
+    : theme.id === "furniture"
+    ? ["Sofas", "Chairs", "Tables", "Storage", "Bedroom", "Collections"]
+    : theme.id === "retail"
+    ? ["Trending", "Electronics", "Home", "Lifestyle", "Bags", "Offers"]
+    : theme.categories || ["All Products", "Sale"]
+
+  const handleNavClick = (item: string) => {
+    setMobileMenuOpen(false)
+    const lower = item.toLowerCase()
+    if (["all products", "new arrivals", "sale", "best sellers", "offers"].includes(lower)) {
+      go(`/store/${slug}/products`)
+    } else {
+      go(`/store/${slug}/categories/${lower.replaceAll(" ", "-")}`)
+    }
+  }
+
+  const hamburgerBtn = (
+    <button
+      type="button"
+      className="store-mobile-toggle"
+      aria-label="Open navigation menu"
+      aria-expanded={mobileMenuOpen}
+      onClick={() => setMobileMenuOpen(true)}
+    >
+      <i className="hamburger-line" />
+      <i className="hamburger-line" />
+      <i className="hamburger-line" />
+    </button>
+  )
+
+  const mobileSubnav = (
+    <nav className="store-mobile-subnav" aria-label="Category navigation">
+      {activeCategories.map(c => (
+        <button
+          key={c}
+          type="button"
+          className="store-mobile-chip"
+          onClick={() => handleNavClick(c)}
+        >
+          {c}
+        </button>
+      ))}
+    </nav>
+  )
+
+  const mobileDrawer = (
+    <>
+      {mobileMenuOpen && (
+        <div
+          className="store-mobile-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`store-mobile-drawer ${mobileMenuOpen ? "open" : ""}`}
+        aria-label="Store menu"
+      >
+        <div className="store-mobile-drawer-header">
+          <button
+            className="store-logo"
+            onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}`); }}
+          >
+            {logoContent}
+          </button>
+          <button
+            type="button"
+            className="store-mobile-close"
+            aria-label="Close navigation menu"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="store-mobile-drawer-search">
+          <form className="theme-search" onSubmit={search}>
+            <input
+              aria-label="Search products"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products..."
+            />
+            <button type="submit" aria-label="Submit search">⌕</button>
+          </form>
+        </div>
+
+        <div className="store-mobile-drawer-nav">
+          <p className="store-mobile-section-title">Categories</p>
+          <button
+            type="button"
+            className="store-mobile-nav-link"
+            onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}/products`); }}
+          >
+            <span>All Products</span>
+            <span className="nav-arrow">→</span>
+          </button>
+          {activeCategories.map(c => (
+            <button
+              key={c}
+              type="button"
+              className="store-mobile-nav-link"
+              onClick={() => handleNavClick(c)}
+            >
+              <span>{c}</span>
+              <span className="nav-arrow">→</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="store-mobile-drawer-footer">
+          <button
+            type="button"
+            className="store-mobile-bag-btn"
+            onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}/cart`); }}
+          >
+            <span>Shopping Bag</span>
+            <span className="cart-badge">{cartCount}</span>
+          </button>
+          <div className="store-mobile-footer-links">
+            <button type="button" onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}/about`); }}>About</button>
+            <button type="button" onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}/contact`); }}>Contact</button>
+            <button type="button" onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}/shipping-policy`); }}>Shipping</button>
+            <button type="button" onClick={() => { setMobileMenuOpen(false); go(`/store/${slug}/returns`); }}>Returns</button>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+
+  const wrapResponsive = (content: React.ReactNode) => (
+    <>
+      {content}
+      {mobileSubnav}
+      {mobileDrawer}
+    </>
+  )
+
   const navButtons=theme.id==="fashion"?(
     <nav>
       <button onClick={()=>go(`/store/${slug}/products`)}>New Arrivals</button>
@@ -110,142 +262,180 @@ function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,anno
   if(theme.id==="shoes"){
     const dropTag=config?.shoesDropTag||"FREE RETURNS · MEMBER EXCLUSIVES · NEW PERFORMANCE DROP"
     const badgeText=config?.shoesBadgeText||"RUN / LIVE"
-    return <>
+    return wrapResponsive(<>
       <div className="sport-strip">{dropTag}</div>
       <header className={`header-shoes ${layoutClass}`}>
-        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<i>{badgeText}</i></button>
+        <div className="header-brand-wrap">
+          {hamburgerBtn}
+          <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<i>{badgeText}</i></button>
+        </div>
         {nav(["Running","Lifestyle","Training","Basketball","Sale"])}
         <div>{searchBox("Find your next pair")}{bag}</div>
       </header>
-    </>
+    </>)
   }
 
   if(theme.id==="electronics"){
     const warrantyText=config?.techWarrantyText||"Support & warranty"
-    return <header className={`header-electronics ${layoutClass}`}>
-      <div className="tech-top">
-        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
-        {searchBox("Search phones, laptops, audio and more")}
-        <button disabled title="Product comparison is not available">Compare</button>
-        <button disabled title="Customer accounts are not enabled">Account</button>
-        {bag}
-      </div>
-      <div className="tech-nav">
-        {nav(["Smartphones","Laptops","Audio","Gaming","Accessories"])}
-        <span>{warrantyText}</span>
-      </div>
-    </header>
+    return wrapResponsive(
+      <header className={`header-electronics ${layoutClass}`}>
+        <div className="tech-top">
+          <div className="header-brand-wrap">
+            {hamburgerBtn}
+            <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          </div>
+          {searchBox("Search phones, laptops, audio and more")}
+          <button disabled title="Product comparison is not available">Compare</button>
+          <button disabled title="Customer accounts are not enabled">Account</button>
+          {bag}
+        </div>
+        <div className="tech-nav">
+          {nav(["Smartphones","Laptops","Audio","Gaming","Accessories"])}
+          <span>{warrantyText}</span>
+        </div>
+      </header>
+    )
   }
 
   if(theme.id==="beauty"){
     const ritualNote=config?.beautyRitualNote||"A considered ritual for skin, hair, and self"
-    return <>
+    return wrapResponsive(<>
       <div className="beauty-note">{ritualNote}</div>
       <header className={`header-beauty ${layoutClass}`}>
-        <div>{searchBox("Search beauty")}<button onClick={()=>go(`/store/${slug}/about`)}>Journal</button></div>
+        <div className="header-brand-wrap beauty-left">
+          {hamburgerBtn}
+          <div className="desktop-search-group">{searchBox("Search beauty")}<button onClick={()=>go(`/store/${slug}/about`)}>Journal</button></div>
+        </div>
         <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<small>BEAUTY RITUALS</small></button>
         <div><button onClick={()=>go(`/store/${slug}/products`)}>My routine</button>{bag}</div>
       </header>
       <div className="beauty-nav">{nav(["Skincare","Makeup","Fragrance","Body Care","Best Sellers"])}</div>
-    </>
+    </>)
   }
 
   if(theme.id==="grocery"){
     const deliveryArea=config?.groceryDeliveryArea||"Dhaka City"
     const offerTag=config?.groceryOfferTag||"Today’s offers"
-    return <header className={`header-grocery ${layoutClass}`}>
-      <div className="delivery-pill">
-        <small>Delivering to</small>
-        <strong>{deliveryArea}</strong>
-      </div>
-      <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
-      {searchBox("Search groceries and essentials")}
-      <button className="offers" onClick={()=>go(`/store/${slug}/products`)}>{offerTag}</button>
-      {bag}
-      <div className="grocery-nav">{nav(["Fruits","Vegetables","Dairy","Bakery","Snacks","Household"])}</div>
-    </header>
+    return wrapResponsive(
+      <header className={`header-grocery ${layoutClass}`}>
+        <div className="delivery-pill">
+          <small>Delivering to</small>
+          <strong>{deliveryArea}</strong>
+        </div>
+        <div className="header-brand-wrap">
+          {hamburgerBtn}
+          <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+        </div>
+        {searchBox("Search groceries and essentials")}
+        <button className="offers" onClick={()=>go(`/store/${slug}/products`)}>{offerTag}</button>
+        {bag}
+        <div className="grocery-nav">{nav(["Fruits","Vegetables","Dairy","Bakery","Snacks","Household"])}</div>
+      </header>
+    )
   }
 
   if(theme.id==="decor"){
     const quote=config?.decorQuote||"Thoughtful pieces for slower, warmer spaces."
-    return <>
+    return wrapResponsive(<>
       <header className={`header-decor ${layoutClass}`}>
-        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<small>OBJECTS FOR HOME</small></button>
+        <div className="header-brand-wrap">
+          {hamburgerBtn}
+          <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<small>OBJECTS FOR HOME</small></button>
+        </div>
         {nav(["Living Room","Bedroom","Lighting","Textiles","Wall Decor","Collections"])}
         <div>{searchBox("Search")}{bag}</div>
       </header>
       <div className="decor-quote">{quote}</div>
-    </>
+    </>)
   }
 
   if(theme.id==="furniture"){
     const subtitle=config?.furnitureSubtitle||"CONTEMPORARY FURNITURE / DHAKA"
-    return <header className={`header-furniture ${layoutClass}`}>
-      <div>
-        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
-        <span>{subtitle}</span>
-        <div>{searchBox("Search collection")}{bag}</div>
-      </div>
-      {nav(["Sofas","Chairs","Tables","Storage","Bedroom","Collections"])}
-    </header>
+    return wrapResponsive(
+      <header className={`header-furniture ${layoutClass}`}>
+        <div>
+          <div className="header-brand-wrap">
+            {hamburgerBtn}
+            <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          </div>
+          <span>{subtitle}</span>
+          <div>{searchBox("Search collection")}{bag}</div>
+        </div>
+        {nav(["Sofas","Chairs","Tables","Storage","Bedroom","Collections"])}
+      </header>
+    )
   }
 
   if(theme.id==="retail"){
     const categoryTag=config?.retailCategoryTag||"All categories"
     const returnBadge=config?.retailReturnBadge||"Easy returns"
-    return <header className={`header-retail ${layoutClass}`}>
-      <div>
-        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
-        {searchBox("What are you looking for?")}
-        <button disabled title="Customer accounts are not enabled">Account</button>
-        {bag}
-      </div>
-      <div>
-        <button className="all-categories" onClick={()=>go(`/store/${slug}/products`)}>{categoryTag}</button>
-        {nav(["Trending","Electronics","Home","Lifestyle","Bags","Offers"])}
-        <span>{returnBadge}</span>
-      </div>
-    </header>
+    return wrapResponsive(
+      <header className={`header-retail ${layoutClass}`}>
+        <div>
+          <div className="header-brand-wrap">
+            {hamburgerBtn}
+            <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          </div>
+          {searchBox("What are you looking for?")}
+          <button disabled title="Customer accounts are not enabled">Account</button>
+          {bag}
+        </div>
+        <div>
+          <button className="all-categories" onClick={()=>go(`/store/${slug}/products`)}>{categoryTag}</button>
+          {nav(["Trending","Electronics","Home","Lifestyle","Bags","Offers"])}
+          <span>{returnBadge}</span>
+        </div>
+      </header>
+    )
   }
 
   // Fashion default
   if(headerLayout==="Compact"){
-    return <>
+    return wrapResponsive(<>
       {currentAnnouncement&&<div className="announcement">{currentAnnouncement}</div>}
       <header className={`header-fashion header-layout-compact`}>
         <div>
-          <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          <div className="header-brand-wrap">
+            {hamburgerBtn}
+            <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          </div>
           {navButtons}
           <div>{searchBox("Search")}{bag}</div>
         </div>
       </header>
-    </>
+    </>)
   }
 
   if(headerLayout==="Split"){
-    return <>
+    return wrapResponsive(<>
       {currentAnnouncement&&<div className="announcement">{currentAnnouncement}</div>}
       <header className={`header-fashion header-layout-split`}>
         <div>
-          {navButtons}
+          <div className="header-brand-wrap fashion-split-left">
+            {hamburgerBtn}
+            {navButtons}
+          </div>
           <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
           <div>{searchBox("Search")}{bag}</div>
         </div>
       </header>
-    </>
+    </>)
   }
 
-  return <>
+  return wrapResponsive(<>
     {currentAnnouncement&&<div className="announcement">{currentAnnouncement}</div>}
     <header className={`header-fashion header-layout-centered`}>
       <div>
-        <button disabled title="Language switching is not configured">BD / EN</button>
+        <div className="header-brand-wrap fashion-left">
+          {hamburgerBtn}
+          <button disabled title="Language switching is not configured" className="desktop-lang">BD / EN</button>
+        </div>
         <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
         <div>{searchBox("Search")}{bag}</div>
       </div>
       {navButtons}
     </header>
-  </>
+  </>)
 }
 
 function Home({theme,products,go,slug,config}:{theme:typeof themeDefinitions[0];products:Product[];go:(p:string)=>void;slug:string;config:ReturnType<typeof getStoreThemeConfig>} ){
