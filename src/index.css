@@ -300,18 +300,6 @@ button:disabled { opacity: .48; cursor: not-allowed; box-shadow: none; }
 .header-shoes .store-mobile-toggle .hamburger-line{background:#fff}
 .header-electronics .store-mobile-toggle .hamburger-line{background:#fff}
 
-.store-mobile-subnav{display:none;width:100%;overflow-x:auto;white-space:nowrap;padding:8px 16px;background:color-mix(in srgb,var(--store-bg,#fff) 96%,#000);border-bottom:1px solid color-mix(in srgb,var(--store-text,#111) 12%,transparent);scrollbar-width:none;-webkit-overflow-scrolling:touch;z-index:10;box-sizing:border-box}
-.store-mobile-subnav::-webkit-scrollbar{display:none}
-.store-mobile-chip{display:inline-block;padding:6px 14px;margin-right:8px;font-size:11px;font-weight:600;border-radius:20px;background:color-mix(in srgb,var(--store-text,#111) 6%,transparent);color:var(--store-text,#111);border:1px solid color-mix(in srgb,var(--store-text,#111) 14%,transparent);cursor:pointer;white-space:nowrap;transition:all .15s}
-.store-mobile-chip:active,.store-mobile-chip:hover{background:var(--store-accent,#111);color:#fff;border-color:var(--store-accent,#111)}
-.theme-shoes .store-mobile-subnav{background:#141414;border-bottom:1px solid #282828}
-.theme-shoes .store-mobile-chip{background:#242424;color:#e5e5e5;border-color:#383838}
-.theme-shoes .store-mobile-chip:active,.theme-shoes .store-mobile-chip:hover{background:#ff5a1f;color:#111;border-color:#ff5a1f}
-.theme-electronics .store-mobile-subnav{background:#101f35;border-bottom:1px solid #1c3357}
-.theme-electronics .store-mobile-chip{background:#182e4e;color:#dbe7f7;border-color:#2a4b7c}
-.theme-beauty .store-mobile-subnav{background:#fbf7f6;border-bottom:1px solid #ecd8da}
-.theme-beauty .store-mobile-chip{background:#f3e6e8;color:#714753;border-color:#e2cad0}
-
 /* Mobile Drawer */
 .store-mobile-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:9999;animation:fadeIn .2s ease-out}
 .store-mobile-drawer{position:fixed;top:0;bottom:0;left:0;width:min(85vw,320px);background:var(--store-bg,#fff);color:var(--store-text,#111827);box-shadow:6px 0 28px rgba(0,0,0,.28);z-index:10000;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .25s cubic-bezier(.16,1,.3,1);overflow-y:auto}
@@ -336,7 +324,6 @@ button:disabled { opacity: .48; cursor: not-allowed; box-shadow: none; }
 @media(max-width:900px){
   .header-brand-wrap{display:flex;align-items:center;gap:10px}
   .store-mobile-toggle{display:inline-flex}
-  .store-mobile-subnav{display:flex}
   .header-fashion>div,.header-beauty,.tech-top,.header-grocery,.header-decor,.header-furniture>div,.header-retail>div:first-child{padding-inline:16px}
   .header-fashion>div{grid-template-columns:1fr auto}
   .header-fashion>div .desktop-lang,.header-fashion>nav,.header-fashion .theme-search{display:none}
@@ -373,7 +360,6 @@ button:disabled { opacity: .48; cursor: not-allowed; box-shadow: none; }
 
 /* Also support ThemeStudio mobile/tablet preview containers */
 .live-preview.mobile .store-mobile-toggle,.live-preview.tablet .store-mobile-toggle{display:inline-flex!important}
-.live-preview.mobile .store-mobile-subnav,.live-preview.tablet .store-mobile-subnav{display:flex!important}
 .live-preview.mobile .header-brand-wrap{display:flex!important;align-items:center;gap:8px}
 .live-preview.mobile .header-shoes{grid-template-columns:1fr auto!important;padding:0 14px!important;height:64px!important}
 .live-preview.mobile .header-shoes nav,.live-preview.mobile .header-shoes>div:last-child .theme-search{display:none!important}

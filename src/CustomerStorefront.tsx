@@ -139,21 +139,6 @@ function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,anno
     </button>
   )
 
-  const mobileSubnav = (
-    <nav className="store-mobile-subnav" aria-label="Category navigation">
-      {activeCategories.map(c => (
-        <button
-          key={c}
-          type="button"
-          className="store-mobile-chip"
-          onClick={() => handleNavClick(c)}
-        >
-          {c}
-        </button>
-      ))}
-    </nav>
-  )
-
   const mobileDrawer = (
     <>
       {mobileMenuOpen && (
@@ -242,7 +227,6 @@ function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,anno
   const wrapResponsive = (content: React.ReactNode) => (
     <>
       {content}
-      {mobileSubnav}
       {mobileDrawer}
     </>
   )
