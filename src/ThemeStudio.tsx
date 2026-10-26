@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { getStoreThemeConfig, saveStoreThemeConfig, StoreThemeConfig, themeDefaults, themeDefinitions } from "./themeStore"
 import { isUserRegistered } from "./utils/auth"
+import { LiveStorefrontView } from "./CustomerStorefront"
 
 const previewThemedProducts: Record<string, Array<{ name: string; price: number; tag: string }>> = {
   shoes: [
@@ -273,223 +274,20 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
         </Control>
       </aside>
 
-      <main className="preview-stage">
+      <main className="preview-stage" style={{ background: "#eef0f3", overflow: "auto", padding: "24px 16px" }}>
         <div
-          className={`live-preview ${device} preview-theme-${theme.id} theme-${theme.id} font-${config.font.toLowerCase()}`}
-          style={{"--preview-primary":config.primary,"--preview-secondary":config.secondary,"--preview-bg":config.background,"--preview-text":config.text,"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties}
+          className={`live-preview ${device} preview-theme-${theme.id}`}
+          style={{
+            width: device === "mobile" ? "375px" : device === "tablet" ? "768px" : "100%",
+            maxWidth: "1280px",
+            boxShadow: "0 12px 36px rgba(16,24,40,.12)",
+            background: "#fff",
+            borderRadius: "8px",
+            overflow: "hidden",
+            transition: "width 0.25s ease",
+          }}
         >
-          {/* Top announcement bar / strip */}
-          {theme.id==="shoes"?(
-            <div className="sport-strip">{config.shoesDropTag||"FREE RETURNS · MEMBER EXCLUSIVES · NEW PERFORMANCE DROP"}</div>
-          ):theme.id==="beauty"?(
-            <div className="beauty-note">{config.beautyRitualNote||"A considered ritual for skin, hair, and self"}</div>
-          ):(
-            announcementText&&<div className="mini-announcement">{announcementText}</div>
-          )}
-
-          {/* Theme-Specific Mini Header */}
-          {theme.id==="shoes"?(
-            <div className={`mini-header mini-header-${config.header.toLowerCase()}`}>
-              <div className="mini-logo-wrap">{logoNode}<i>{config.shoesBadgeText||"RUN / LIVE"}</i></div>
-              <span>Running　Lifestyle　Training</span>
-              <b>Bag (0)</b>
-            </div>
-          ):theme.id==="electronics"?(
-            <div>
-              <div className={`mini-header mini-header-${config.header.toLowerCase()}`}>
-                <div className="mini-logo-wrap">{logoNode}</div>
-                <span>Smartphones　Laptops　Audio</span>
-                <b>Bag (0)</b>
-              </div>
-              <div style={{background:"var(--preview-primary)",color:"#fff",padding:"4px 25px",fontSize:"8px",display:"flex",justifyContent:"space-between",opacity:0.9}}>
-                <span>Compare · Account · Support</span>
-                <b>{config.techWarrantyText||"Support & warranty"}</b>
-              </div>
-            </div>
-          ):theme.id==="beauty"?(
-            <div>
-              <div className={`mini-header mini-header-${config.header.toLowerCase()}`}>
-                <span>Journal</span>
-                <div className="mini-logo-wrap">{logoNode}<small style={{display:"block",fontSize:"6px",letterSpacing:".2em"}}>BEAUTY RITUALS</small></div>
-                <b>Bag (0)</b>
-              </div>
-              <div style={{textAlign:"center",padding:"5px",fontSize:"8px",borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
-                Skincare　Makeup　Fragrance　Body Care
-              </div>
-            </div>
-          ):theme.id==="grocery"?(
-            <div>
-              <div className={`mini-header mini-header-${config.header.toLowerCase()}`} style={{alignItems:"center"}}>
-                <div className="delivery-pill" style={{padding:"3px 8px"}}>
-                  <small style={{fontSize:"6px"}}>Delivering to</small>
-                  <strong style={{fontSize:"8px"}}>{config.groceryDeliveryArea||"Dhaka City"}</strong>
-                </div>
-                <div className="mini-logo-wrap">{logoNode}</div>
-                <span style={{background:"#fff0c8",color:"#8b5b00",padding:"2px 6px",borderRadius:"4px",fontSize:"8px",fontWeight:700}}>
-                  {config.groceryOfferTag||"Today’s offers"}
-                </span>
-                <b>Bag (0)</b>
-              </div>
-              <div style={{textAlign:"center",padding:"5px",fontSize:"8px",borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
-                Fresh Produce　Pantry　Dairy　Bakery
-              </div>
-            </div>
-          ):theme.id==="decor"?(
-            <div>
-              <div className={`mini-header mini-header-${config.header.toLowerCase()}`}>
-                <div className="mini-logo-wrap">{logoNode}<small style={{display:"block",fontSize:"6px",letterSpacing:".15em"}}>OBJECTS FOR HOME</small></div>
-                <span>Living Room　Lighting　Textiles</span>
-                <b>Bag (0)</b>
-              </div>
-              <div className="decor-quote">{config.decorQuote||"Thoughtful pieces for slower, warmer spaces."}</div>
-            </div>
-          ):theme.id==="furniture"?(
-            <div className={`mini-header mini-header-${config.header.toLowerCase()}`}>
-              <div className="mini-logo-wrap">{logoNode}</div>
-              <span style={{fontSize:"7px",letterSpacing:".15em"}}>{config.furnitureSubtitle||"CONTEMPORARY FURNITURE / DHAKA"}</span>
-              <b>Bag (0)</b>
-            </div>
-          ):theme.id==="retail"?(
-            <div>
-              <div className={`mini-header mini-header-${config.header.toLowerCase()}`}>
-                <div className="mini-logo-wrap">{logoNode}</div>
-                <span style={{fontSize:"8px",background:"var(--preview-primary)",color:"#fff",padding:"2px 8px",borderRadius:"4px"}}>
-                  {config.retailCategoryTag||"All categories"}
-                </span>
-                <b>Bag (0)</b>
-              </div>
-              <div style={{padding:"3px 25px",fontSize:"8px",display:"flex",justifyContent:"space-between",background:"rgba(0,0,0,0.03)"}}>
-                <span>Trending　Electronics　Lifestyle</span>
-                <small style={{color:"var(--preview-primary)",fontWeight:700}}>{config.retailReturnBadge||"Easy returns"}</small>
-              </div>
-            </div>
-          ):(
-            /* Fashion default */
-            config.header==="Compact"?(
-              <div className="mini-header mini-header-compact">
-                <div className="mini-logo-wrap">{logoNode}</div>
-                <span>New Arrivals　Women　Men　Sale</span>
-                <b>Bag (0)</b>
-              </div>
-            ):config.header==="Split"?(
-              <div className="mini-header mini-header-split">
-                <span>Women　Men</span>
-                <div className="mini-logo-wrap">{logoNode}</div>
-                <b>Bag (0)</b>
-              </div>
-            ):(
-              <div className="mini-header mini-header-centered">
-                <div className="mini-header-top">
-                  <div className="mini-logo-wrap">{logoNode}</div>
-                  <b>Bag (0)</b>
-                </div>
-                <span>New Arrivals　Women　Men　Sale</span>
-              </div>
-            )
-          )}
-
-          {/* Mini Hero */}
-          <div className="mini-hero">
-            <span>
-              {theme.id==="fashion"
-                ?(config.fashionCollectionStyle?`${config.fashionCollectionStyle.toUpperCase()} EDIT`:theme.label)
-                :theme.id==="shoes"
-                ?(config.shoesDropTag||theme.label)
-                :theme.id==="beauty"
-                ?(config.beautyCampaignTitle?config.beautyCampaignTitle.toUpperCase():theme.label)
-                :theme.id==="grocery"
-                ?`FRESH TO ${config.groceryDeliveryArea?.toUpperCase()||"DHAKA"}`
-                :theme.id==="decor"
-                ?`${config.decorRoomFocus?.toUpperCase()||"LIVING ROOM"} FOCUS`
-                :theme.id==="retail"
-                ?(config.retailDealHighlight?.toUpperCase()||theme.label)
-                :theme.label}
-            </span>
-            <h1>{config.heroTitle}</h1>
-            <p>{config.heroText}</p>
-            <button>Explore collection</button>
-          </div>
-
-          {/* Mini Categories */}
-          {config.showCategories&&<div className="mini-categories">
-            {theme.categories.slice(0,3).map(c=><div key={c}><i/><strong>{c}</strong></div>)}
-          </div>}
-
-          {/* Mini Products Grid with theme-specific attributes */}
-          <div className={`mini-products cols-${config.grid}`}>
-            {productList.slice(0,config.grid).map((item,i)=><div key={i}>
-              <i/>
-              <b>{item.name}</b>
-              <span>৳{item.price.toLocaleString()}</span>
-              <small style={{fontSize:"7px",opacity:0.75,display:"block",marginTop:"3px"}}>
-                {theme.id==="shoes"&&config.shoesHighlightSizes
-                  ?"Sizes: 39-43"
-                  :theme.id==="electronics"&&config.techShowSpecs
-                  ?item.tag
-                  :theme.id==="beauty"&&config.beautyShowRoutine
-                  ?"Ritual step"
-                  :theme.id==="grocery"&&config.groceryShowQuantity
-                  ?item.tag
-                  :item.tag}
-              </small>
-            </div>)}
-          </div>
-
-          {/* Mini Promo Story */}
-          {config.showPromo&&<div className="mini-promo">
-            <div/>
-            <h2>
-              {theme.id==="fashion"
-                ?(config.fashionLookbookTitle||"A story worth sharing.")
-                :theme.id==="shoes"
-                ?(config.shoesDropTag||"High-mileage performance.")
-                :theme.id==="electronics"
-                ?(config.techDealTitle||"Engineered for speed & clarity.")
-                :theme.id==="beauty"
-                ?(config.beautyCampaignTitle||"Pure botanical rituals.")
-                :theme.id==="grocery"
-                ?`Delivered fresh across ${config.groceryDeliveryArea||"Dhaka"}.`
-                :theme.id==="decor"
-                ?(config.decorQuote||"Thoughtful objects for calm spaces.")
-                :theme.id==="furniture"
-                ?(config.furnitureMaterialNote||"Solid oak & performance weave.")
-                :(config.retailDealHighlight||"Curated daily essentials.")}
-            </h2>
-          </div>}
-
-          {/* Mini Testimonials */}
-          {config.showTestimonials&&<blockquote>
-            {theme.id==="furniture"
-              ?"“The material details made choosing the right piece simple.”"
-              :theme.id==="beauty"
-              ?"“A calm, considered way to discover my daily skincare routine.”"
-              :theme.id==="shoes"
-              ?"“Unrivaled comfort from the first run. The size guide was spot-on.”"
-              :"“A beautifully simple shopping experience.”"}
-          </blockquote>}
-
-          {/* Mini Footer */}
-          {config.footer==="Minimal"?(
-            <footer className="minimal">{config.logoImage?<img src={config.logoImage} alt={config.logo} style={{maxHeight:"18px",maxWidth:"80px",objectFit:"contain",verticalAlign:"middle"}}/>:config.logo} · Shipping · Returns · Contact</footer>
-          ):(
-            <footer className="expanded">
-              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:"20px",marginBottom:"15px",textAlign:"left"}}>
-                <div>
-                  <strong>{config.logoImage?<img src={config.logoImage} alt={config.logo} style={{maxHeight:"20px",maxWidth:"90px",objectFit:"contain",verticalAlign:"middle"}}/>:config.logo}</strong>
-                  <p style={{opacity:0.7,margin:"6px 0 0",fontSize:"8px"}}>{theme.accent}</p>
-                </div>
-                <div>
-                  <b style={{display:"block",fontSize:"8px",textTransform:"uppercase",marginBottom:"4px"}}>Shop</b>
-                  <div style={{opacity:0.7,display:"flex",flexDirection:"column",gap:"3px"}}><span>All products</span><span>Collections</span></div>
-                </div>
-                <div>
-                  <b style={{display:"block",fontSize:"8px",textTransform:"uppercase",marginBottom:"4px"}}>Info</b>
-                  <div style={{opacity:0.7,display:"flex",flexDirection:"column",gap:"3px"}}><span>Shipping</span><span>Contact</span></div>
-                </div>
-              </div>
-              <div style={{borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:"10px",opacity:0.6,fontSize:"8px"}}>© 2025 {config.logo}. Fictional demonstration store.</div>
-            </footer>
-          )}
+          <LiveStorefrontView config={config} go={go} />
         </div>
       </main>
     </div>

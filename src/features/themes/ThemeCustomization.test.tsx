@@ -262,7 +262,7 @@ describe("Themes & Customization", () => {
     const storeRes = render(<CustomerStorefront path="/store/demo" go={() => {}} />)
     expect(storeRes.container.querySelector(".theme-electronics")).toBeInTheDocument()
     expect(storeRes.container.querySelector(".header-electronics")).toBeInTheDocument()
-    expect(storeRes.getByText("Featured technology")).toBeInTheDocument()
+    expect(storeRes.getAllByText("Featured technology").length).toBeGreaterThan(0)
   })
 
   it("returns to /seller/themes when closing preview from seller dashboard", () => {

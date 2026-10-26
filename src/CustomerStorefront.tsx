@@ -376,3 +376,60 @@ function StoreFooter({theme,go,slug,footerLayout}:{theme:typeof themeDefinitions
   return <footer className="store-footer"><div><strong>{theme.name}</strong><p>{theme.accent}</p></div><div><b>Shop</b><button onClick={()=>go(`/store/${slug}/products`)}>All products</button><button onClick={()=>go(`/store/${slug}/track-order`)}>Track order</button></div><div><b>Information</b><button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button><button onClick={()=>go(`/store/${slug}/shipping-policy`)}>Shipping</button><button onClick={()=>go(`/store/${slug}/returns`)}>Returns</button><button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button><button onClick={()=>go(`/store/${slug}/terms`)}>Terms</button></div><form onSubmit={e=>{e.preventDefault();if(email.includes("@"))setJoined(true)}}><b>Stay in the loop</b>{joined?<p>Thanks — newsletter signup was simulated.</p>:<><label className="sr-only" htmlFor={`newsletter-${slug}`}>Email address</label><input id={`newsletter-${slug}`} type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address"/><button>Join newsletter</button></>}</form><small>© 2025 {theme.name}. Fictional ShopNest demonstration store.</small></footer>
 }
 
+export function LiveStorefrontView({
+  config,
+  go = () => {},
+}: {
+  config: ReturnType<typeof getStoreThemeConfig>
+  go?: (path: string) => void
+}) {
+  const theme = themeDefinitions.find((t) => t.id === config.themeId) || themeDefinitions[0]
+  const products = (theme.id === "fashion" ? getCommerceProducts() : productsForTheme(theme.id)).filter(
+    (product) => product.status === "Active"
+  )
+  const [query, setQuery] = useState("")
+  const layout = {
+    theme,
+    slug: "demo",
+    cartCount: 0,
+    query,
+    setQuery,
+    go,
+    logo: config.logo || theme.name,
+    logoImage: config.logoImage || "",
+    announcementText: config.announcementText,
+    headerLayout: config.header || "Centered",
+    config,
+  }
+
+  return (
+    <div
+      className={`customer-store theme-${theme.id} font-${config.font ? config.font.toLowerCase() : "modern"}`}
+      style={
+        {
+          "--store-accent": config.primary,
+          "--store-soft": config.secondary,
+          "--store-bg": config.background,
+          "--store-text": config.text,
+          "--store-grid": config.grid,
+          minHeight: "100%",
+        } as React.CSSProperties
+      }
+    >
+      <StoreHeader {...layout} />
+      <Home
+        theme={{
+          ...theme,
+          hero: config.heroTitle || theme.hero,
+          accent: config.heroText || theme.accent,
+        }}
+        products={products}
+        go={go}
+        slug="demo"
+        config={config}
+      />
+      <StoreFooter theme={theme} go={go} slug="demo" footerLayout={config.footer || "Expanded"} />
+    </div>
+  )
+}
+
