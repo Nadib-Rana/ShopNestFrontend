@@ -65,7 +65,7 @@ All seller routes render within the `App` component with the sidebar layout.
 | `/seller/subscription/history` | `SellerBilling` | Payment history list |
 | `/seller/subscription/PAY-xxxx` | `SellerBilling` | Individual payment detail |
 | `/seller/analytics` | `AnalyticsPage` | Sales performance, gross revenue, order volume, AOV, top products, payment breakdown |
-| `/seller/settings` | `ComingSoon` | Store settings (scheduled for Phase 7) |
+| `/seller/settings` | `SettingsPage` | Store profile, trade license, checkout rules, notifications, maintenance mode |
 
 ---
 

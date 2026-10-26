@@ -39,6 +39,7 @@ src/
 │   │   ├── SellerManagement.tsx      — Products, categories, inventory, orders, customers
 │   │   ├── ShippingPage.tsx          — Shipping zones & courier integration workspace
 │   │   ├── AnalyticsPage.tsx         — Business revenue, order volume, AOV, and charts
+│   │   ├── SettingsPage.tsx           — Store profile, legal, checkout, notifications, maintenance
 │   │   └── Storefront.tsx            — Storefront overview & domain management
 │   ├── themes/
 │   │   ├── ThemeStudio.tsx           — Theme gallery & live customizer (active theme isolated)
@@ -55,6 +56,8 @@ src/
 │
 ├── repositories/
 │   ├── commerceStore.ts              — Products & orders localStorage adapter
+│   ├── shippingStore.ts              — Shipping rules and couriers persistence
+│   ├── settingsStore.ts              — Store profile & preferences persistence
 │   └── themeStore.ts                 — Theme configuration & 8 theme definitions
 │
 ├── constants/

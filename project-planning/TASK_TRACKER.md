@@ -108,7 +108,7 @@
 | SN-THM-005 | Preview Return Route Memory | MEDIUM | DONE | Close preview returns to caller route | Uses shopnest_preview_return |
 | SN-UI-001 | Customizer Preview Scrolling Fix | HIGH | DONE | Right preview pane scrolls top to bottom | Resolved flex-stretch and double-main margin issues |
 | SN-UI-002 | Mobile Responsive Navigation | HIGH | DONE | Hamburger toggle + slideout drawer | Works on all 8 themes & PublicNav |
-| SN-FE-022 | Implement Store Settings page | LOW | TODO | Page renders store preferences | Currently placeholder |
+| SN-FE-022 | Implement Store Settings page | HIGH | DONE | Page renders store profile, legal, checkout, alerts, maintenance | Implemented in src/features/seller/SettingsPage.tsx |
 
 ---
 
@@ -117,9 +117,9 @@
 | Task ID | Task | Priority | Status | Verification Criteria | Notes |
 |---------|------|----------|--------|-----------------------|-------|
 | SN-TST-001 | Vitest Test Runner Setup | CRITICAL | DONE | npm test executes via Vitest & jsdom | Configured in vite.config.ts & src/test/setup.ts |
-| SN-TST-002 | Automated Unit & Integration Tests | HIGH | DONE | 30/30 tests pass | Tests for format, useRoute, ui components, onboarding, theme customization |
-| SN-QA-001 | Build Verification | CRITICAL | DONE | npm run build exits 0 with 0 errors | Bundle clean (490ms) |
-| SN-QA-002 | Type Check Verification | CRITICAL | DONE | npx tsc --noEmit reports 0 errors | ES2022 lib enabled |
+| SN-TST-002 | Automated Unit & Integration Tests | HIGH | DONE | 37/37 tests pass | Tests for format, useRoute, ui components, onboarding, theme customization, settingsStore, SettingsPage |
+| SN-QA-001 | Build Verification | CRITICAL | DONE | npm run build exits 0 with 0 errors | Bundle clean (518ms) |
+| SN-QA-002 | Type Check Verification | CRITICAL | DONE | npx tsc --noEmit reports 0 errors | 0 errors |
 
 ---
 

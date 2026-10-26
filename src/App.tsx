@@ -17,6 +17,7 @@ const ThemeStudio = lazy(() => import("./features/themes/ThemeStudio"))
 const PublicThemesPage = lazy(() => import("./features/themes/PublicThemesPage"))
 const ShippingPage = lazy(() => import("./features/seller/ShippingPage"))
 const AnalyticsPage = lazy(() => import("./features/seller/AnalyticsPage"))
+const SettingsPage = lazy(() => import("./features/seller/SettingsPage"))
 const BillingAdminModule = lazy(() => import("./features/subscriptions/BillingAdmin").then(m => ({ default: m.SellerBilling })))
 const AdminAppModule = lazy(() => import("./features/subscriptions/BillingAdmin").then(m => ({ default: m.AdminApp })))
 
@@ -124,7 +125,10 @@ export default function App() {
         {active === "Subscription" && (
           <BillingAdminModule path={path} go={go} notify={notify} />
         )}
-        {!["Overview", "Products", "Categories", "Inventory", "Orders", "Customers", "Storefront", "Themes", "Design customizer", "Subscription", "Shipping & delivery", "Analytics"].includes(active) && (
+        {active === "Store settings" && (
+          <SettingsPage notify={notify} />
+        )}
+        {!["Overview", "Products", "Categories", "Inventory", "Orders", "Customers", "Storefront", "Themes", "Design customizer", "Subscription", "Shipping & delivery", "Analytics", "Store settings"].includes(active) && (
           <ComingSoon title={active} />
         )}
       </Suspense>

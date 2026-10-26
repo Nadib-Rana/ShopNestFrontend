@@ -250,3 +250,24 @@ Customer places order at /store/demo/checkout
   → Payment Channel Breakdown: bKash, Nagad, Cash on Delivery, Credit/Debit Cards
   → Top Products Leaderboard: Ranked by unit sales and gross revenue
 ```
+
+## 12. Store Settings Management Flow
+
+```
+/seller/settings
+  → Status Summary Cards:
+      - Storefront Status: Live Storefront vs Maintenance Mode
+      - Currency & Timezone: BDT (৳) / Asia/Dhaka (GMT+6)
+      - Guest Checkout: Enabled vs Account Required
+      - Realtime Order Alerts: SMS & Email
+  → Settings Tabs:
+      - General Profile: Store Display Name, Registered Business Name, Tagline, Logo hint
+      - Contact & Address: Support Email, Helpline Phone, Physical Address, City, Postal Code
+      - Business & Legal: Trade License Number (TRAD/DNCC), e-TIN / BIN registration
+      - Checkout & Preferences: Primary currency, timezone, default language, guest checkout toggle, strict phone validation
+      - Notifications & Alerts: Instant SMS alert on order, email invoice notification, low stock warning threshold
+      - WhatsApp & Social: WhatsApp direct chat number, Facebook page URL, Instagram handle
+      - Maintenance & Danger Zone: Storefront maintenance mode toggle with custom message banner, reset settings to defaults
+  → Save Changes: Validates inputs, saves to localStorage (`shopnest-store-settings`), and displays confirmation toast
+```
+

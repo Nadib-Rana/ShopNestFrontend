@@ -159,3 +159,31 @@ export interface IconProps {
   size?: number
   className?: string
 }
+
+export interface StoreSettings {
+  storeName: string
+  legalBusinessName: string
+  tagline: string
+  supportEmail: string
+  phone: string
+  businessAddress: string
+  city: string
+  postalCode: string
+  tradeLicenseNumber: string
+  tinNumber: string
+  currency: string
+  timezone: string
+  defaultLanguage: "bn" | "en"
+  whatsappNumber: string
+  facebookUrl: string
+  instagramHandle: string
+  allowGuestCheckout: boolean
+  requirePhoneVerification: boolean
+  smsOrderNotification: boolean
+  emailOrderNotification: boolean
+  lowStockAlert: boolean
+  lowStockThreshold: number
+  maintenanceMode: boolean
+  maintenanceMessage: string
+}
+

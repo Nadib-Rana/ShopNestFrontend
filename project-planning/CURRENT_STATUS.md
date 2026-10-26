@@ -24,12 +24,12 @@
 
 | Check | Result | Baseline (Old) | Current State |
 |-------|--------|----------------|---------------|
-| `npm test` (Vitest) | ✅ 30 / 30 Passed | None (0 tests) | 30 tests passing across 7 test suites |
+| `npm test` (Vitest) | ✅ 37 / 37 Passed | None (0 tests) | 37 tests passing across 9 test suites |
 | `npx tsc --noEmit` | ✅ 0 Errors | 14 pre-existing errors | 0 errors |
-| `npm run build` | ✅ Success (490ms) | Exited 0 (387ms) | Exited 0 (490ms) |
-| Initial JS Bundle (raw) | ✅ Optimized | 355 KB (monolith) | 272 KB (code-split) |
+| `npm run build` | ✅ Success (518ms) | Exited 0 (387ms) | Exited 0 (518ms) |
+| Initial JS Bundle (raw) | ✅ Optimized | 355 KB (monolith) | 273 KB (code-split) |
 | Initial JS Bundle (gzip) | ✅ Optimized | 102 KB | 83 KB |
-| Dynamic Route Chunks | ✅ Lazy Loaded | 0 chunks | 10 route chunks via `React.lazy` |
+| Dynamic Route Chunks | ✅ Lazy Loaded | 0 chunks | 11 route chunks via `React.lazy` |
 | Total CSS (raw) | ✅ Fully Styled | 104 KB | 119 KB (8 theme systems + mobile drawer) |
 | Total CSS (gzip) | ✅ Optimized | 21 KB | 23.48 KB |
 

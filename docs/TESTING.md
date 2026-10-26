@@ -14,13 +14,15 @@
 
 | Test File | Target Feature | Tests |
 |-----------|---------------|-------|
-| `src/utils/format.test.ts` | Currency formatting (`money()`), number formatting, slug generation | 5 |
-| `src/repositories/commerceStore.test.ts` | LocalStorage commerce store persistence & order management | 4 |
-| `src/features/storefront/CustomerStorefront.test.tsx` | 8 distinct storefront themes, product cards, category grids, mobile drawer | 6 |
-| `src/features/themes/ThemeStudio.test.tsx` | Active theme customizer isolation, control rendering, preview updates | 4 |
-| `src/features/themes/PublicThemesPage.test.tsx` | Public theme gallery, preview links, registration check gating | 4 |
-| `src/features/seller/ShippingPage.test.tsx` | Shipping zones (Dhaka/Outside), COD toggles, courier integration status | 4 |
-| `src/features/seller/AnalyticsPage.test.tsx` | Business KPIs (Revenue, Orders, AOV), date filter tabs, payment breakdown | 3 |
+| `src/utils/format.test.ts` | Currency formatting (`money()`), number formatting, slug generation | 3 |
+| `src/hooks/useRoute.test.ts` | Routing, pushState, and URL parsing | 3 |
+| `src/components/ui/Icon.test.tsx` | SVG icon library rendering and sizes | 3 |
+| `src/components/ui/Badge.test.tsx` | Status pill badges and color mappings | 2 |
+| `src/components/ui/Status.test.tsx` | Dot status indicators | 2 |
+| `src/features/onboarding/Onboarding.test.tsx` | 6-step onboarding wizard and theme selection | 5 |
+| `src/features/themes/ThemeCustomization.test.tsx` | 8 distinct storefront themes, customizer controls, live preview, auth check | 12 |
+| `src/repositories/settingsStore.test.ts` | Store settings localStorage persistence and reset | 3 |
+| `src/features/seller/SettingsPage.test.tsx` | Store settings tabs, profile updates, maintenance toggle | 4 |
 
 ---
 
@@ -28,7 +30,7 @@
 
 | Command | Purpose |
 |---------|---------|
-| `npm test` | Run all 30 automated Vitest unit and integration tests |
+| `npm test` | Run all 37 automated Vitest unit and integration tests |
 | `npm run dev` | Start development server on port 8443 |
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Preview the production build locally |
@@ -40,9 +42,9 @@
 
 | Check | Result |
 |-------|--------|
-| `npm test` | ✅ 7/7 test files passed, 30/30 tests passed |
+| `npm test` | ✅ 9/9 test files passed, 37/37 tests passed |
 | `npx tsc --noEmit` | ✅ 0 errors (strict TypeScript clean) |
-| `npm run build` | ✅ Success (~490ms, zero bundle warnings) |
+| `npm run build` | ✅ Success (~518ms, zero bundle warnings) |
 
 ---
 
@@ -188,11 +190,25 @@ Run this checklist after any significant change to verify no regressions.
 - [ ] Drawer displays store brand, nav links, category quick links, and cart summary
 - [ ] Click close button or backdrop → drawer dismisses cleanly
 
-### N — General
+### N — Store Settings Workspace
+
+- [ ] Navigate to `/seller/settings` → Settings header, status pills, and overview stat cards render
+- [ ] General Profile tab: Edit store name and tagline → "Unsaved changes" indicator appears
+- [ ] Click "Save Changes" → notification toast appears and changes persist to localStorage
+- [ ] Contact tab: Update support email and helpline phone
+- [ ] Legal tab: Input Trade License (TRAD/DNCC) and TIN/BIN
+- [ ] Preferences tab: Toggle Guest Checkout and strict phone validation
+- [ ] Notifications tab: Toggle SMS / Email order alerts and low stock threshold
+- [ ] WhatsApp & Social tab: Enter WhatsApp direct chat phone and Facebook URL
+- [ ] Maintenance & Danger Zone: Toggle Maintenance Mode on → reveals message banner textarea
+- [ ] Click "Reset" button → opens confirmation dialog; confirming restores initial defaults
+
+### O — General
 
 - [ ] Notification bell opens popover with 3 items
 - [ ] Notification items navigate to correct pages
 - [ ] 404 page shown for unknown routes
 - [ ] "Return home" on 404 → navigates to `/`
 - [ ] Page title updates correctly for each section
+
 

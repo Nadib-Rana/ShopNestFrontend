@@ -3,6 +3,24 @@
 > Structural and meaningful changes to the codebase. Not every trivial edit.
 > Last updated: 2026-10-26
 
+## [1.3.0] — 2026-10-26 — Store Settings Workspace & Complete Seller Suite
+
+### Added
+- **Store Settings Workspace (`src/features/seller/SettingsPage.tsx`)**:
+  - Implemented complete, production-grade Store Settings workspace at `/seller/settings`.
+  - Seven comprehensive tabs: General Profile, Contact & Address, Business & Legal, Checkout & Preferences, Notifications & Alerts, WhatsApp & Social, and Maintenance & Danger Zone.
+  - Interactive top stat cards: Storefront Status, Currency & Timezone, Guest Checkout, and Realtime Order Alerts.
+  - Form validation with unsaved changes indicator, reset confirmation modal, and toast notification dispatch.
+- **Store Settings Data Store (`src/repositories/settingsStore.ts`)**:
+  - Implemented `StoreSettings` persistence adapter in `localStorage` (`shopnest-store-settings`).
+  - Added initial default configuration, `getStoreSettings`, `saveStoreSettings`, and `resetStoreSettings`.
+- **Vitest Automated Tests Expansion**:
+  - Created `src/repositories/settingsStore.test.ts` (3 tests).
+  - Created `src/features/seller/SettingsPage.test.tsx` (4 tests).
+  - Expanded total automated suite to **37 tests across 9 test files**, passing with 100% success rate.
+- **100% Seller Workspace Coverage**:
+  - All 13 seller sidebar routes are now powered by dedicated, polished workspace components with 0 remaining `ComingSoon` placeholders.
+
 ---
 
 ## [1.2.0] — 2026-10-26 — Themes Customization, Public Themes, Workspaces & Responsive Navigation
