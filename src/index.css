@@ -112,8 +112,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 button:disabled { opacity: .48; cursor: not-allowed; box-shadow: none; }
 .auth-logo { display: flex; align-items: center; gap: 10px; font: 700 19px var(--font-display); }
 .welcome-page { min-height: 100vh; background: radial-gradient(circle at 80% 15%,#ececff 0,transparent 28%),#fafaf8; }
-.public-nav { max-width: 1180px; margin: auto; height: 80px; padding: 0 26px; display: flex; align-items: center; justify-content: space-between; border: 0; background: transparent; position: static; }
-.public-nav nav { display: flex; overflow: visible; }.public-nav nav button,.public-nav .text-button { color: #4f5868; width: auto; margin: 0; font-size: 13px; }.public-nav > div { display: flex; align-items: center; gap: 10px; }
+.public-nav { width: 100%; max-width: 1180px; margin: 0 auto; height: 80px; padding: 0 26px; display: flex; align-items: center; justify-content: space-between; border: 0; background: transparent; position: static; box-sizing: border-box; }
+.public-nav nav { display: flex; overflow: visible; }.public-nav nav button,.public-nav .text-button { color: #4f5868; width: auto; margin: 0; font-size: 13px; }.public-nav nav button.active { color: var(--color-brand-600, #4b4bc7); font-weight: 600; }.public-nav > div { display: flex; align-items: center; gap: 10px; }
 .welcome-main { max-width: 900px; margin: auto; padding: 100px 24px 70px; text-align: center; }
 .welcome-main h1 { font: 700 clamp(42px,6vw,72px)/1.06 var(--font-display); letter-spacing: -.055em; margin: 22px 0; }
 .welcome-main > p { color: var(--color-muted); max-width: 650px; font-size: 17px; line-height: 1.65; margin: 0 auto 28px; }

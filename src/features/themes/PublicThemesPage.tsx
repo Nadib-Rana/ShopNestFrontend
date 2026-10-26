@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { themeDefinitions, themeDefaults, saveStoreThemeConfig } from "../../repositories/themeStore"
 import { isUserRegistered } from "../../utils/auth"
 import { Status } from "../../components/ui/Status"
+import { PublicNav } from "../../components/shared/PublicNav"
 
 export function PublicThemesPage({ go, notify }: { go: (path: string) => void; notify?: (msg: string) => void }) {
   const [filter, setFilter] = useState("all")
@@ -50,30 +51,8 @@ export function PublicThemesPage({ go, notify }: { go: (path: string) => void; n
     : themeDefinitions.filter((t) => t.id === filter)
 
   return (
-    <div className="welcome-page" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Public Navigation Header */}
-      <header className="public-nav">
-        <div className="auth-logo" style={{ cursor: "pointer" }} onClick={() => go("/")}>
-          <span className="brand-mark"><span /></span>
-          <strong>ShopNest</strong>
-        </div>
-        <nav>
-          <button onClick={() => go("/store/demo")}>Product</button>
-          <button style={{ color: "var(--color-brand-600, #4b4bc7)", fontWeight: 700 }} onClick={() => go("/themes")}>Themes</button>
-          <button onClick={() => go("/signup")}>Pricing</button>
-          <button onClick={() => { window.location.href = "mailto:support@shopnest.example" }}>Help</button>
-        </nav>
-        <div>
-          {registered ? (
-            <button className="primary" onClick={() => go("/seller/overview")}>Go to dashboard</button>
-          ) : (
-            <>
-              <button className="text-button" onClick={() => go("/login")}>Log in</button>
-              <button className="primary" onClick={() => go("/signup")}>Start free trial</button>
-            </>
-          )}
-        </div>
-      </header>
+    <div className="welcome-page">
+      <PublicNav go={go} active="Themes" />
 
       {/* Hero Banner */}
       <main style={{ maxWidth: "1180px", margin: "0 auto", padding: "40px 24px 80px", width: "100%", flex: 1 }}>

@@ -1,26 +1,12 @@
 import React from "react"
 import { Icon } from "../../components/ui/Icon"
 import { Status } from "../../components/ui/Status"
+import { PublicNav } from "../../components/shared/PublicNav"
 
 export function ShopNestHome({ go }: { go: (path: string) => void }) {
   return (
     <div className="welcome-page">
-      <header className="public-nav">
-        <div className="auth-logo">
-          <span className="brand-mark"><span /></span>
-          <strong>ShopNest</strong>
-        </div>
-        <nav>
-          <button onClick={() => go("/store/demo")}>Product</button>
-          <button onClick={() => go("/themes")}>Themes</button>
-          <button onClick={() => go("/signup")}>Pricing</button>
-          <button onClick={() => window.location.href = "mailto:support@shopnest.example"}>Help</button>
-        </nav>
-        <div>
-          <button className="text-button" onClick={() => go("/login")}>Log in</button>
-          <button className="primary" onClick={() => go("/signup")}>Start free trial</button>
-        </div>
-      </header>
+      <PublicNav go={go} />
 
       <main className="welcome-main">
         <Status tone="purple">Built for businesses in Bangladesh</Status>
