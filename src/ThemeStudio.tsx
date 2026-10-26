@@ -336,7 +336,21 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
         </Control>
       </aside>
 
-      <main className="preview-stage" style={{ background: "#eef0f3", overflow: "auto", padding: "24px 16px" }}>
+      <div
+        className="preview-stage"
+        style={{
+          background: "#eef0f3",
+          overflowY: "auto",
+          overflowX: "auto",
+          padding: "24px 16px 60px",
+          height: "100%",
+          minHeight: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          flex: 1,
+        }}
+      >
         <div
           className={`live-preview ${device} preview-theme-${theme.id}`}
           style={{
@@ -345,13 +359,17 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
             boxShadow: "0 12px 36px rgba(16,24,40,.12)",
             background: "#fff",
             borderRadius: "8px",
-            overflow: "hidden",
+            overflow: "visible",
             transition: "width 0.25s ease",
+            alignSelf: "flex-start",
+            flexShrink: 0,
+            minHeight: "fit-content",
+            height: "auto",
           }}
         >
           <LiveStorefrontView config={config} go={go} />
         </div>
-      </main>
+      </div>
     </div>
 
     {reset&&<div className="modal-backdrop" role="dialog" aria-modal="true">

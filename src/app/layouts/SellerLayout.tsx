@@ -100,59 +100,61 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
         />
       )}
 
-      <main>
-        <header>
-          <div className="header-left">
-            <button
-              className="mobile-toggle"
-              aria-label="Open navigation"
-              onClick={() => setMobileOpen(true)}
-            >
-              <Icon name="menu" />
-            </button>
-            <div className="search-field">
-              <Icon name="search" />
-              <input
-                placeholder="Search orders, products, customers... (⌘K)"
-                aria-label="Search ShopNest"
-              />
-            </div>
-          </div>
-          <div className="header-actions">
-            <button
-              className="icon-button"
-              aria-label="Notifications"
-              aria-expanded={notificationsOpen}
-              onClick={() => setNotificationsOpen((v) => !v)}
-            >
-              <Icon name="bell" />
-              <i />
-            </button>
-            <button className="preview-button" onClick={() => go("/store/demo")}>
-              <Icon name="external" />View store
-            </button>
-          </div>
-          {notificationsOpen && (
-            <div className="notification-popover">
-              <div>
-                <strong>Notifications</strong>
-                <button onClick={() => setNotificationsOpen(false)}>Close</button>
+      <main className={active === "Design customizer" ? "customizer-layout-main" : ""}>
+        {active !== "Design customizer" && (
+          <header>
+            <div className="header-left">
+              <button
+                className="mobile-toggle"
+                aria-label="Open navigation"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Icon name="menu" />
+              </button>
+              <div className="search-field">
+                <Icon name="search" />
+                <input
+                  placeholder="Search orders, products, customers... (⌘K)"
+                  aria-label="Search ShopNest"
+                />
               </div>
-              <button onClick={() => go("/seller/orders")}>
-                <span>New order received</span>
-                <small>Order SN-1048 is ready to process.</small>
+            </div>
+            <div className="header-actions">
+              <button
+                className="icon-button"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+                onClick={() => setNotificationsOpen((v) => !v)}
+              >
+                <Icon name="bell" />
+                <i />
               </button>
-              <button onClick={() => go("/seller/inventory")}>
-                <span>Low stock warning</span>
-                <small>Everyday Canvas Tote has 6 units left.</small>
-              </button>
-              <button onClick={() => go("/seller/subscription/history")}>
-                <span>Payment update</span>
-                <small>Review your latest subscription submission.</small>
+              <button className="preview-button" onClick={() => go("/store/demo")}>
+                <Icon name="external" />View store
               </button>
             </div>
-          )}
-        </header>
+            {notificationsOpen && (
+              <div className="notification-popover">
+                <div>
+                  <strong>Notifications</strong>
+                  <button onClick={() => setNotificationsOpen(false)}>Close</button>
+                </div>
+                <button onClick={() => go("/seller/orders")}>
+                  <span>New order received</span>
+                  <small>Order SN-1048 is ready to process.</small>
+                </button>
+                <button onClick={() => go("/seller/inventory")}>
+                  <span>Low stock warning</span>
+                  <small>Everyday Canvas Tote has 6 units left.</small>
+                </button>
+                <button onClick={() => go("/seller/subscription/history")}>
+                  <span>Payment update</span>
+                  <small>Review your latest subscription submission.</small>
+                </button>
+              </div>
+            )}
+          </header>
+        )}
 
         {children}
       </main>
