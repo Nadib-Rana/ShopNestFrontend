@@ -89,7 +89,8 @@ Full architectural specifications and development plans are available in the rep
 - [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) — Typography, color tokens, and components
 - [`docs/BUSINESS_FLOWS.md`](docs/BUSINESS_FLOWS.md) — Core user journey flows
 - [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md) — Planned backend REST API contracts
-- [`docs/TESTING.md`](docs/TESTING.md) — Manual testing and regression checklists
+- [`docs/NESTJS_BACKEND_BLUEPRINT.md`](docs/NESTJS_BACKEND_BLUEPRINT.md) — Complete NestJS backend architecture, Prisma schema, multi-tenancy & courier blueprint
+- [`docs/TESTING.md`](docs/TESTING.md) — Automated Vitest test suite and manual regression checklists
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — Codebase refactoring changelog
 - [`project-planning/MASTER_PLAN.md`](project-planning/MASTER_PLAN.md) — 16-phase development roadmap
 - [`project-planning/TASK_TRACKER.md`](project-planning/TASK_TRACKER.md) — Granular task status tracker
