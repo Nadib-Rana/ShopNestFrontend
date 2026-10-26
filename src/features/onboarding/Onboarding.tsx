@@ -112,7 +112,7 @@ export function Onboarding({ path, go }: { path: string; go: (path: string) => v
             unavailable={unavailable}
           />
         )}
-        {current === "theme" && <OnboardingTheme theme={theme} setTheme={setTheme} />}
+        {current === "theme" && <OnboardingTheme theme={theme} setTheme={setTheme} go={go} />}
         {current === "branding" && <OnboardingBrand brand={brand} setBrand={setBrand} />}
         {current === "complete" && (
           <OnboardingComplete
@@ -243,37 +243,119 @@ function OnboardingStore({
 function OnboardingTheme({
   theme,
   setTheme,
+  go,
 }: {
   theme: string
   setTheme: (v: string) => void
+  go: (path: string) => void
 }) {
+  const [filter, setFilter] = useState("all")
+
+  const handlePreview = (slug: string) => {
+    try {
+      localStorage.setItem("shopnest_preview_return", "/onboarding/theme")
+    } catch {}
+    go(`/store/${slug}/preview`)
+  }
+
+  const categories = [
+    { id: "all", label: "All Themes" },
+    { id: "fashion", label: "Fashion" },
+    { id: "shoes", label: "Shoes" },
+    { id: "electronics", label: "Electronics" },
+    { id: "beauty", label: "Beauty" },
+    { id: "grocery", label: "Grocery" },
+    { id: "decor", label: "Home Decor" },
+    { id: "furniture", label: "Furniture" },
+    { id: "retail", label: "General Retail" },
+  ]
+
+  const filteredThemes = filter === "all"
+    ? themeDefinitions
+    : themeDefinitions.filter((t) => t.id === filter)
+
   return (
     <section className="onboarding-panel wide-panel">
       <span className="eyebrow">STEP 4 OF 6</span>
       <h1>Choose your starting theme</h1>
-      <p>Pick a direction now—you can switch or customize it anytime.</p>
-      <div className="theme-grid">
-        {themeDefinitions.map((item) => (
+      <p>Browse 8 distinct storefront architectures tailored for Bangladeshi merchants. Experience authentic headers, typography, and merchandising. You can switch or customize your theme anytime.</p>
+
+      {/* Filter Chips */}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", margin: "20px 0 26px" }}>
+        {categories.map((c) => (
           <button
+            key={c.id}
             type="button"
-            className={`theme-choice ${theme === item.id ? "selected" : ""}`}
-            onClick={() => setTheme(item.id)}
-            key={item.id}
+            onClick={() => setFilter(c.id)}
+            style={{
+              border: filter === c.id ? "1px solid #4b4bc7" : "1px solid #e4e7ec",
+              background: filter === c.id ? "#f4f3ff" : "#fff",
+              color: filter === c.id ? "#4b4bc7" : "#475467",
+              fontWeight: filter === c.id ? 700 : 500,
+              fontSize: "12px",
+              padding: "7px 14px",
+              borderRadius: "20px",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
           >
-            <div className={`theme-shot ${item.id}`}>
-              <span />
-              <i />
-              <b />
-            </div>
-            <div>
-              <strong>{item.title}</strong>
-              <span>{item.label}</span>
-            </div>
-            {theme === item.id && (
-              <em><Icon name="check" /></em>
-            )}
+            {c.label}
           </button>
         ))}
+      </div>
+
+      {/* Theme Cards Grid */}
+      <div className="theme-gallery-grid">
+        {filteredThemes.map((item) => {
+          const isSelected = theme === item.id
+          return (
+            <article
+              className={`theme-gallery-card ${isSelected ? "active" : ""}`}
+              key={item.id}
+              onClick={() => setTheme(item.id)}
+              style={{ cursor: "pointer", transition: "all 0.2s ease" }}
+            >
+              <div className={`theme-card-visual visual-${item.id}`}>
+                <div className="tc-head">
+                  <b>{item.name}</b>
+                  <span>Shop　Story　Bag</span>
+                </div>
+                <div className="tc-hero">
+                  <small>{item.label}</small>
+                  <strong>{item.hero}</strong>
+                  <i />
+                </div>
+                <div className="tc-products">
+                  <i /><i /><i />
+                </div>
+              </div>
+              <div className="theme-card-info">
+                <div>
+                  <span>{item.label}</span>
+                  {isSelected && <em>Selected ✓</em>}
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => handlePreview(item.slug)}
+                  >
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    className={isSelected ? "primary" : "secondary"}
+                    onClick={() => setTheme(item.id)}
+                  >
+                    {isSelected ? "Selected ✓" : "Select theme"}
+                  </button>
+                </div>
+              </div>
+            </article>
+          )
+        })}
       </div>
     </section>
   )

@@ -8,15 +8,26 @@ describe("Onboarding Wizard", () => {
     localStorage.clear()
   })
 
-  it("renders all 8 themes on the theme step", () => {
+  it("renders all 8 themes with category filter chips on the theme step", () => {
     const go = vi.fn()
     render(<Onboarding path="/onboarding/theme" go={go} />)
 
     expect(screen.getByText("Choose your starting theme")).toBeInTheDocument()
+    expect(screen.getByText("All Themes")).toBeInTheDocument()
+    expect(screen.getByText("Shoes")).toBeInTheDocument()
+
     themeDefinitions.forEach((item) => {
       expect(screen.getByText(item.title)).toBeInTheDocument()
-      expect(screen.getByText(item.label)).toBeInTheDocument()
     })
+  })
+
+  it("filters themes when clicking category chip", () => {
+    const go = vi.fn()
+    render(<Onboarding path="/onboarding/theme" go={go} />)
+
+    fireEvent.click(screen.getByText("Shoes"))
+    expect(screen.getByText("Shoes Store")).toBeInTheDocument()
+    expect(screen.queryByText("Electronics Store")).not.toBeInTheDocument()
   })
 
   it("pre-selects the pending theme from localStorage if present", () => {
@@ -24,19 +35,24 @@ describe("Onboarding Wizard", () => {
     const go = vi.fn()
     render(<Onboarding path="/onboarding/theme" go={go} />)
 
-    const shoesButton = screen.getByText("Shoes Store").closest("button")
-    expect(shoesButton).toHaveClass("selected")
+    const shoesCard = screen.getByText("Shoes Store").closest(".theme-gallery-card")
+    expect(shoesCard).toHaveClass("active")
   })
 
-  it("allows switching themes and reviews the selected theme title", () => {
+  it("allows switching themes and triggers preview", () => {
     const go = vi.fn()
     render(<Onboarding path="/onboarding/theme" go={go} />)
 
-    const electronicsButton = screen.getByText("Electronics Store").closest("button")
-    expect(electronicsButton).toBeInTheDocument()
-    fireEvent.click(electronicsButton!)
+    const beautyCard = screen.getByText("Cosmetics & Beauty Store").closest(".theme-gallery-card")
+    expect(beautyCard).toBeInTheDocument()
+    fireEvent.click(beautyCard!)
 
-    expect(electronicsButton).toHaveClass("selected")
+    expect(beautyCard).toHaveClass("active")
+
+    const previewBtn = beautyCard!.querySelector("button.secondary")
+    expect(previewBtn).toHaveTextContent("Preview")
+    fireEvent.click(previewBtn!)
+    expect(go).toHaveBeenCalledWith("/store/bloom/preview")
   })
 
   it("saves the store theme config upon completing onboarding", () => {
