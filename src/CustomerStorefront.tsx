@@ -66,14 +66,14 @@ export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=
   const customized=slug==="demo"&&section!=="preview"
   const theme=customized?themeDefinitions.find(t=>t.id===config.themeId):routeTheme
   const [cart,setCart]=useState<CartItem[]>(getCart)
-  const products=(slug==="demo"?getCommerceProducts():productsForTheme(theme?.id||"fashion")).filter(product=>product.status==="Active")
+  const products=(slug==="demo"&&theme?.id==="fashion"?getCommerceProducts():productsForTheme(theme?.id||"fashion")).filter(product=>product.status==="Active")
   const [query,setQuery]=useState("")
   const [lastOrder,setLastOrder]=useState<CommerceOrder|null>(()=>getCommerceOrders()[0]||null)
   if(!theme)return <div className="store-unavailable"><strong>ShopNest</strong><div><span>404</span><h1>This store isn’t available.</h1><p>Check the store address or contact the business owner.</p><button onClick={()=>go("/")}>Return to ShopNest</button></div></div>
   const saveCart=(next:CartItem[])=>{setCart(next);localStorage.setItem(cartKey,JSON.stringify(next))}
   const add=(product:Product,variant:string,quantity=1)=>{const found=cart.find(i=>i.product.id===product.id&&i.variant===variant);saveCart(found?cart.map(i=>i===found?{...i,quantity:Math.min(product.stock,i.quantity+quantity)}:i):[...cart,{product,variant,quantity}])}
   const count=cart.reduce((a,i)=>a+i.quantity,0)
-  const layout={theme,slug,cartCount:count,query,setQuery,go,logo:slug==="demo"?config.logo:theme.name}
+  const layout={theme,slug,cartCount:count,query,setQuery,go,logo:slug==="demo"?config.logo:theme.name,logoImage:slug==="demo"?config.logoImage:"",announcementText:slug==="demo"?config.announcementText:undefined,headerLayout:slug==="demo"?config.header:"Centered",config}
   let page:React.ReactNode
   if(section==="products"&&detail)page=<ProductDetail product={products.find(p=>p.id===Number(detail))||products[0]} add={add} go={go} slug={slug}/>
   else if(section==="products"||section==="search"||section==="categories")page=<Catalog products={products} query={section==="search"?query:""} go={go} slug={slug} category={detail}/>
@@ -83,25 +83,242 @@ export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=
   else if(section==="track-order")page=<Tracking orders={getCommerceOrders()} initial={lastOrder}/>
   else if(["about","contact","shipping-policy","returns","privacy","terms"].includes(section))page=<Policy type={section} theme={theme}/>
   else page=<Home theme={{...theme,hero:customized?config.heroTitle:theme.hero,accent:customized?config.heroText:theme.accent}} products={products} go={go} slug={slug} config={customized?config:{...config,showCategories:true,showPromo:true,showTestimonials:true}}/>
-  return <div className={`customer-store theme-${theme.id} font-${customized?config.font.toLowerCase():"modern"}`} style={customized?{"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties:undefined}>{section==="preview"&&<div className="theme-preview-return" role="navigation" aria-label="Theme preview controls"><span>Previewing <strong>{theme.title}</strong></span><button aria-label={`Close ${theme.title} preview and return to Theme Gallery`} onClick={()=>go("/seller/themes")}><span aria-hidden="true">×</span> Close Preview</button></div>}<StoreHeader {...layout}/>{page}<StoreFooter theme={theme} go={go} slug={slug}/></div>
+  return <div className={`customer-store theme-${theme.id} font-${customized?config.font.toLowerCase():"modern"}`} style={customized?{"--store-accent":config.primary,"--store-soft":config.secondary,"--store-bg":config.background,"--store-text":config.text,"--store-grid":config.grid} as React.CSSProperties:undefined}>{section==="preview"&&<div className="theme-preview-return" role="navigation" aria-label="Theme preview controls"><span>Previewing <strong>{theme.title}</strong></span><button aria-label={`Close ${theme.title} preview and return to Theme Gallery`} onClick={()=>{let ret="/themes";try{ret=localStorage.getItem("shopnest_preview_return")||"/themes"}catch{}go(ret)}}><span aria-hidden="true">×</span> Close Preview</button></div>}<StoreHeader {...layout}/>{page}<StoreFooter theme={theme} go={go} slug={slug} footerLayout={slug==="demo"?config.footer:"Expanded"}/></div>
 }
 
-function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo}:{theme:typeof themeDefinitions[0];slug:string;cartCount:number;query:string;setQuery:(v:string)=>void;go:(p:string)=>void;logo:string}){
+function StoreHeader({theme,slug,cartCount,query,setQuery,go,logo,logoImage,announcementText,headerLayout="Centered",config}:{theme:typeof themeDefinitions[0];slug:string;cartCount:number;query:string;setQuery:(v:string)=>void;go:(p:string)=>void;logo:string;logoImage?:string;announcementText?:string;headerLayout?:string;config?:ReturnType<typeof getStoreThemeConfig>}){
   const search=(e:FormEvent)=>{e.preventDefault();go(`/store/${slug}/search`)}
   const nav=(items=theme.categories)=><nav>{items.map(c=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}>{c}</button>)}</nav>
   const searchBox=(label="Search products")=><form className="theme-search" onSubmit={search}><input aria-label={label} value={query} onChange={e=>setQuery(e.target.value)} placeholder={label}/><button aria-label="Submit search">⌕</button></form>
   const bag=<button className="cart-link" onClick={()=>go(`/store/${slug}/cart`)}>Bag <span>{cartCount}</span></button>
-  if(theme.id==="fashion")return <><div className="announcement">The summer edit · Complimentary delivery over ৳3,000</div><header className="header-fashion"><div><button disabled title="Language switching is not configured">BD / EN</button><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}</button><div>{searchBox("Search")}{bag}</div></div><nav><button onClick={()=>go(`/store/${slug}/products`)}>New Arrivals</button><button onClick={()=>go(`/store/${slug}/products`)}>Women</button><button onClick={()=>go(`/store/${slug}/products`)}>Men</button><button onClick={()=>go(`/store/${slug}/categories/accessories`)}>Accessories</button><button onClick={()=>go(`/store/${slug}/products`)}>Sale</button></nav></header></>
-  if(theme.id==="shoes")return <><div className="sport-strip">FREE RETURNS · MEMBER EXCLUSIVES · NEW PERFORMANCE DROP</div><header className="header-shoes"><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}<i>RUN / LIVE</i></button>{nav(["Running","Lifestyle","Training","Basketball","Sale"])}<div>{searchBox("Find your next pair")}{bag}</div></header></>
-  if(theme.id==="electronics")return <header className="header-electronics"><div className="tech-top"><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}</button>{searchBox("Search phones, laptops, audio and more")}<button disabled title="Product comparison is not available">Compare</button><button disabled title="Customer accounts are not enabled">Account</button>{bag}</div><div className="tech-nav">{nav(["Smartphones","Laptops","Audio","Gaming","Accessories"])}<span>Support & warranty</span></div></header>
-  if(theme.id==="beauty")return <><div className="beauty-note">A considered ritual for skin, hair, and self</div><header className="header-beauty"><div>{searchBox("Search beauty")}<button onClick={()=>go(`/store/${slug}/about`)}>Journal</button></div><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}<small>BEAUTY RITUALS</small></button><div><button onClick={()=>go(`/store/${slug}/products`)}>My routine</button>{bag}</div></header><div className="beauty-nav">{nav(["Skincare","Makeup","Fragrance","Body Care","Best Sellers"])}</div></>
-  if(theme.id==="grocery")return <header className="header-grocery"><div className="delivery-pill"><small>Delivering to</small><strong>Dhaka City</strong></div><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}</button>{searchBox("Search groceries and essentials")}<button className="offers" onClick={()=>go(`/store/${slug}/products`)}>Today’s offers</button>{bag}<div className="grocery-nav">{nav(["Fruits","Vegetables","Dairy","Bakery","Snacks","Household"])}</div></header>
-  if(theme.id==="decor")return <><header className="header-decor"><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}<small>OBJECTS FOR HOME</small></button>{nav(["Living Room","Bedroom","Lighting","Textiles","Wall Decor","Collections"])}<div>{searchBox("Search")}{bag}</div></header><div className="decor-quote">Thoughtful pieces for slower, warmer spaces.</div></>
-  if(theme.id==="furniture")return <header className="header-furniture"><div><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}</button><span>CONTEMPORARY FURNITURE / DHAKA</span><div>{searchBox("Search collection")}{bag}</div></div>{nav(["Sofas","Chairs","Tables","Storage","Bedroom","Collections"])}</header>
-  return <header className="header-retail"><div><button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logo}</button>{searchBox("What are you looking for?")}<button disabled title="Customer accounts are not enabled">Account</button>{bag}</div><div><button className="all-categories" onClick={()=>go(`/store/${slug}/products`)}>All categories</button>{nav(["Trending","Electronics","Home","Lifestyle","Bags","Offers"])}<span>Easy returns</span></div></header>
+  const logoContent=logoImage?<img src={logoImage} alt={logo}/>:logo
+  const defaultAnnouncement="The summer edit · Complimentary delivery over ৳3,000"
+  const currentAnnouncement=announcementText!==undefined&&announcementText!==""?announcementText:defaultAnnouncement
+  const navButtons=theme.id==="fashion"?(
+    <nav>
+      <button onClick={()=>go(`/store/${slug}/products`)}>New Arrivals</button>
+      <button onClick={()=>go(`/store/${slug}/products`)}>Women</button>
+      <button onClick={()=>go(`/store/${slug}/products`)}>Men</button>
+      <button onClick={()=>go(`/store/${slug}/categories/accessories`)}>Accessories</button>
+      <button onClick={()=>go(`/store/${slug}/products`)}>Sale</button>
+    </nav>
+  ):nav(theme.categories)
+
+  const layoutClass=`header-layout-${(headerLayout||"centered").toLowerCase()}`
+
+  if(theme.id==="shoes"){
+    const dropTag=config?.shoesDropTag||"FREE RETURNS · MEMBER EXCLUSIVES · NEW PERFORMANCE DROP"
+    const badgeText=config?.shoesBadgeText||"RUN / LIVE"
+    return <>
+      <div className="sport-strip">{dropTag}</div>
+      <header className={`header-shoes ${layoutClass}`}>
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<i>{badgeText}</i></button>
+        {nav(["Running","Lifestyle","Training","Basketball","Sale"])}
+        <div>{searchBox("Find your next pair")}{bag}</div>
+      </header>
+    </>
+  }
+
+  if(theme.id==="electronics"){
+    const warrantyText=config?.techWarrantyText||"Support & warranty"
+    return <header className={`header-electronics ${layoutClass}`}>
+      <div className="tech-top">
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+        {searchBox("Search phones, laptops, audio and more")}
+        <button disabled title="Product comparison is not available">Compare</button>
+        <button disabled title="Customer accounts are not enabled">Account</button>
+        {bag}
+      </div>
+      <div className="tech-nav">
+        {nav(["Smartphones","Laptops","Audio","Gaming","Accessories"])}
+        <span>{warrantyText}</span>
+      </div>
+    </header>
+  }
+
+  if(theme.id==="beauty"){
+    const ritualNote=config?.beautyRitualNote||"A considered ritual for skin, hair, and self"
+    return <>
+      <div className="beauty-note">{ritualNote}</div>
+      <header className={`header-beauty ${layoutClass}`}>
+        <div>{searchBox("Search beauty")}<button onClick={()=>go(`/store/${slug}/about`)}>Journal</button></div>
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<small>BEAUTY RITUALS</small></button>
+        <div><button onClick={()=>go(`/store/${slug}/products`)}>My routine</button>{bag}</div>
+      </header>
+      <div className="beauty-nav">{nav(["Skincare","Makeup","Fragrance","Body Care","Best Sellers"])}</div>
+    </>
+  }
+
+  if(theme.id==="grocery"){
+    const deliveryArea=config?.groceryDeliveryArea||"Dhaka City"
+    const offerTag=config?.groceryOfferTag||"Today’s offers"
+    return <header className={`header-grocery ${layoutClass}`}>
+      <div className="delivery-pill">
+        <small>Delivering to</small>
+        <strong>{deliveryArea}</strong>
+      </div>
+      <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+      {searchBox("Search groceries and essentials")}
+      <button className="offers" onClick={()=>go(`/store/${slug}/products`)}>{offerTag}</button>
+      {bag}
+      <div className="grocery-nav">{nav(["Fruits","Vegetables","Dairy","Bakery","Snacks","Household"])}</div>
+    </header>
+  }
+
+  if(theme.id==="decor"){
+    const quote=config?.decorQuote||"Thoughtful pieces for slower, warmer spaces."
+    return <>
+      <header className={`header-decor ${layoutClass}`}>
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}<small>OBJECTS FOR HOME</small></button>
+        {nav(["Living Room","Bedroom","Lighting","Textiles","Wall Decor","Collections"])}
+        <div>{searchBox("Search")}{bag}</div>
+      </header>
+      <div className="decor-quote">{quote}</div>
+    </>
+  }
+
+  if(theme.id==="furniture"){
+    const subtitle=config?.furnitureSubtitle||"CONTEMPORARY FURNITURE / DHAKA"
+    return <header className={`header-furniture ${layoutClass}`}>
+      <div>
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+        <span>{subtitle}</span>
+        <div>{searchBox("Search collection")}{bag}</div>
+      </div>
+      {nav(["Sofas","Chairs","Tables","Storage","Bedroom","Collections"])}
+    </header>
+  }
+
+  if(theme.id==="retail"){
+    const categoryTag=config?.retailCategoryTag||"All categories"
+    const returnBadge=config?.retailReturnBadge||"Easy returns"
+    return <header className={`header-retail ${layoutClass}`}>
+      <div>
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+        {searchBox("What are you looking for?")}
+        <button disabled title="Customer accounts are not enabled">Account</button>
+        {bag}
+      </div>
+      <div>
+        <button className="all-categories" onClick={()=>go(`/store/${slug}/products`)}>{categoryTag}</button>
+        {nav(["Trending","Electronics","Home","Lifestyle","Bags","Offers"])}
+        <span>{returnBadge}</span>
+      </div>
+    </header>
+  }
+
+  // Fashion default
+  if(headerLayout==="Compact"){
+    return <>
+      {currentAnnouncement&&<div className="announcement">{currentAnnouncement}</div>}
+      <header className={`header-fashion header-layout-compact`}>
+        <div>
+          <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          {navButtons}
+          <div>{searchBox("Search")}{bag}</div>
+        </div>
+      </header>
+    </>
+  }
+
+  if(headerLayout==="Split"){
+    return <>
+      {currentAnnouncement&&<div className="announcement">{currentAnnouncement}</div>}
+      <header className={`header-fashion header-layout-split`}>
+        <div>
+          {navButtons}
+          <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+          <div>{searchBox("Search")}{bag}</div>
+        </div>
+      </header>
+    </>
+  }
+
+  return <>
+    {currentAnnouncement&&<div className="announcement">{currentAnnouncement}</div>}
+    <header className={`header-fashion header-layout-centered`}>
+      <div>
+        <button disabled title="Language switching is not configured">BD / EN</button>
+        <button className="store-logo" onClick={()=>go(`/store/${slug}`)}>{logoContent}</button>
+        <div>{searchBox("Search")}{bag}</div>
+      </div>
+      {navButtons}
+    </header>
+  </>
 }
+
 function Home({theme,products,go,slug,config}:{theme:typeof themeDefinitions[0];products:Product[];go:(p:string)=>void;slug:string;config:ReturnType<typeof getStoreThemeConfig>} ){
-  return <main className={`home-layout home-${theme.id}`}><section className="store-hero"><img src={theme.heroImage} alt={`${theme.label} collection`}/><div><span>{theme.label}</span><h1>{theme.hero}</h1><p>{theme.accent}</p><button onClick={()=>go(`/store/${slug}/products`)}>Explore collection</button></div></section>{config.showCategories&&<section className="store-section"><div className="store-title"><span>CURATED FOR YOU</span><h2>{theme.id==="decor"?"Shop by room":theme.id==="electronics"?"Browse devices":"Shop by collection"}</h2></div><div className="store-categories">{theme.categories.map((c,i)=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}><img src={theme.categoryImages[i]} alt={`${c} collection`}/><span>{c}</span></button>)}</div></section>}<ProductSection title={theme.id==="grocery"?"Weekly essentials":theme.id==="electronics"?"Featured technology":"New arrivals"} products={products} go={go} slug={slug}/>{config.showPromo&&<section className="store-promo"><div><span>{theme.id==="electronics"?"WHY NOVA":theme.id==="grocery"?"THIS WEEK":"THE EDIT"}</span><h2>{theme.promoTitle}</h2><p>{theme.id==="electronics"?"Compare key specifications, understand warranty coverage, and choose with confidence.":theme.id==="furniture"?"Explore dimensions, finishes, materials, assembly, and delivery before you order.":"Discover considered products selected for quality, usefulness, and enduring appeal."}</p></div><img src={theme.categoryImages[1]} alt={`${theme.name} editorial feature`}/></section>}<ProductSection title={theme.id==="shoes"?"Trending pairs":theme.id==="grocery"?"Popular this week":"Best sellers"} products={[...products].reverse()} go={go} slug={slug}/><section className="trust-row"><div><b>{theme.id==="electronics"?"Warranty clarity":"Simple delivery"}</b><span>Clear rates and estimated dates</span></div><div><b>{theme.id==="grocery"?"Freshness first":"Thoughtful support"}</b><span>Real help from the store team</span></div><div><b>Secure ordering</b><span>Guest checkout, no account needed</span></div></section>{config.showTestimonials&&<section className="testimonial"><p>“{theme.id==="furniture"?"The material details made choosing the right piece simple.":theme.id==="beauty"?"A calm, considered way to discover my daily routine.":"Beautiful products and a checkout that felt refreshingly simple."}”</p><span>Fictional customer testimonial</span></section>}</main>
+  const promoSubtitle=theme.id==="fashion"
+    ?(config.fashionLookbookTitle||"Discover considered products selected for quality, usefulness, and enduring appeal.")
+    :theme.id==="shoes"
+    ?"Engineered responsive cushioning, high-traction rubber, and breathable geometry built for mileage and lifestyle rotation."
+    :theme.id==="electronics"
+    ?(config.techWarrantyText?`All devices include ${config.techWarrantyText}. Compare key specifications and choose with confidence.`:"Compare key specifications, understand warranty coverage, and choose with confidence.")
+    :theme.id==="beauty"
+    ?(config.beautyRitualNote||"Niacinamide, ceramides, and clean low-pH formulas designed for radiant daily barrier health.")
+    :theme.id==="grocery"
+    ?`Delivering fresh farm-to-table produce and essentials across ${config.groceryDeliveryArea||"Dhaka City"} with zero delivery fees over ৳3,000.`
+    :theme.id==="decor"
+    ?(config.decorQuote||"Warm ceramic bases, washed linen layers, and weighty stone objects for slower, warmer rooms.")
+    :theme.id==="furniture"
+    ?(config.furnitureMaterialNote?`${config.furnitureMaterialNote}. Explore dimensions, finishes, and assembly before you order.`:"Solid frame, performance weave, softened edges, and assembly support on all orders.")
+    :(config.retailReturnBadge?`Every order backed by ${config.retailReturnBadge}. Double-wall travel bottles, compact desk audio, and daily essentials.`:"Every order backed by simple returns and transparent guarantees. Daily essentials made accessible.")
+
+  const promoBadge=theme.id==="fashion"
+    ?(config.fashionCollectionStyle?`${config.fashionCollectionStyle.toUpperCase()} EDIT`:"THE EDIT")
+    :theme.id==="shoes"
+    ?(config.shoesDropTag||"NEW PERFORMANCE DROP")
+    :theme.id==="electronics"
+    ?(config.techDealTitle||"WHY NOVA")
+    :theme.id==="beauty"
+    ?(config.beautyCampaignTitle||"CONSIDERED RITUALS")
+    :theme.id==="grocery"
+    ?(config.groceryOfferTag||"THIS WEEK")
+    :theme.id==="decor"
+    ?(config.decorRoomFocus?`${config.decorRoomFocus.toUpperCase()} FOCUS`:"ROOM FOCUS")
+    :theme.id==="furniture"
+    ?(config.furnitureSubtitle||"CRAFTED SPACES")
+    :(config.retailDealHighlight||"FLASH PICKS")
+
+  return <main className={`home-layout home-${theme.id}`}>
+    <section className="store-hero">
+      <img src={theme.heroImage} alt={`${theme.label} collection`}/>
+      <div>
+        <span>{theme.label}</span>
+        <h1>{theme.hero}</h1>
+        <p>{theme.accent}</p>
+        <button onClick={()=>go(`/store/${slug}/products`)}>Explore collection</button>
+      </div>
+    </section>
+    {config.showCategories&&<section className="store-section">
+      <div className="store-title">
+        <span>CURATED FOR YOU</span>
+        <h2>{theme.id==="decor"?"Shop by room":theme.id==="electronics"?"Browse devices":"Shop by collection"}</h2>
+      </div>
+      <div className="store-categories">
+        {theme.categories.map((c,i)=><button onClick={()=>go(`/store/${slug}/categories/${c.toLowerCase().replaceAll(" ","-")}`)} key={c}><img src={theme.categoryImages[i]} alt={`${c} collection`}/><span>{c}</span></button>)}
+      </div>
+    </section>}
+    <ProductSection title={theme.id==="grocery"?"Weekly essentials":theme.id==="electronics"?"Featured technology":"New arrivals"} products={products} go={go} slug={slug}/>
+    {config.showPromo&&<section className="store-promo">
+      <div>
+        <span>{promoBadge}</span>
+        <h2>{theme.promoTitle}</h2>
+        <p>{promoSubtitle}</p>
+      </div>
+      <img src={theme.categoryImages[1]} alt={`${theme.name} editorial feature`}/>
+    </section>}
+    <ProductSection title={theme.id==="shoes"?"Trending pairs":theme.id==="grocery"?"Popular this week":"Best sellers"} products={[...products].reverse()} go={go} slug={slug}/>
+    <section className="trust-row">
+      <div><b>{theme.id==="electronics"?"Warranty clarity":"Simple delivery"}</b><span>Clear rates and estimated dates</span></div>
+      <div><b>{theme.id==="grocery"?"Freshness first":"Thoughtful support"}</b><span>Real help from the store team</span></div>
+      <div><b>Secure ordering</b><span>Guest checkout, no account needed</span></div>
+    </section>
+    {config.showTestimonials&&<section className="testimonial">
+      <p>“{theme.id==="furniture"?"The material details made choosing the right piece simple.":theme.id==="beauty"?"A calm, considered way to discover my daily routine.":"Beautiful products and a checkout that felt refreshingly simple."}”</p>
+      <span>Fictional customer testimonial</span>
+    </section>}
+  </main>
 }
 function ProductSection({title,products,go,slug}:{title:string;products:Product[];go:(p:string)=>void;slug:string}){return <section className={`store-section product-section section-${title.toLowerCase().replaceAll(" ","-")}`}><div className="store-title"><span>DISCOVER</span><h2>{title}</h2></div><div className="product-grid">{products.map(p=><ProductCard p={p} go={go} slug={slug} key={p.id}/>)}</div></section>}
 function ProductCard({p,go,slug}:{p:Product;go:(x:string)=>void;slug:string}){return <button className="store-product" onClick={()=>go(`/store/${slug}/products/${p.id}`)}><div><img src={p.image||images[0]} alt={p.name}/>{p.sale>0&&<span>SALE</span>}<em>View product</em></div><small>{p.category}</small><strong>{p.name}</strong><p>{money(p.sale||p.price)} {p.sale>0&&<del>{money(p.price)}</del>}</p><div className="product-extra"><span>{p.sizes.split(",").slice(0,3).join(" · ")}</span><b>{p.description.split("·")[0]}</b></div></button>}
@@ -137,4 +354,24 @@ function OrderBox({cart,subtotal,shipping,total,children}:{cart:CartItem[];subto
 function Confirmation({order,go,slug}:{order:CommerceOrder|null;go:(p:string)=>void;slug:string}){if(!order)return <main className="store-empty"><b>Order not found</b></main>;return <main className="confirmation-page"><div>✓</div><span>DEMO ORDER CONFIRMED</span><h1>Thank you, {order.customer}.</h1><p>Your mock order <strong>#{order.id}</strong> has been created in this browser. No real order was transmitted.</p><section><div><h2>Delivery details</h2><p>{order.address}, {order.city}<br/>{order.phone}</p></div><div><h2>Order total</h2><strong>{money(order.total)}</strong><p>{order.payment}</p></div></section><button onClick={()=>go(`/store/${slug}/track-order`)}>Track this order</button><button onClick={()=>go(`/store/${slug}`)}>Return to store</button></main>}
 function Tracking({orders,initial}:{orders:CommerceOrder[];initial:CommerceOrder|null}){const [id,setId]=useState(initial?.id||""),[phone,setPhone]=useState(initial?.phone||""),[found,setFound]=useState<CommerceOrder|null>(initial),[searched,setSearched]=useState(false);const search=(e:FormEvent)=>{e.preventDefault();setFound(orders.find(o=>o.id.toLowerCase()===id.toLowerCase()&&o.phone.replaceAll(" ","")===phone.replaceAll(" ",""))||null);setSearched(true)};const steps=["Pending","Confirmed","Processing","Shipped","Out for delivery","Delivered"],position=Math.max(0,steps.indexOf(found?.status||"Pending"));return <main className="tracking-page"><span>ORDER TRACKING</span><h1>Where is your order?</h1><form onSubmit={search}><label>Order number<input value={id} onChange={e=>setId(e.target.value)} placeholder="SN-123456"/></label><label>Phone number<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="01XXXXXXXXX"/></label><button>Track order</button></form>{searched&&!found&&<div className="store-error">We couldn’t match that order and phone number.</div>}{found&&<section><div className="tracking-head"><div><span>Order #{found.id}</span><strong>{found.status}</strong></div><b>{money(found.total)}</b></div><div className="tracking-steps">{steps.map((s,i)=><div className={i<=position?"done":""} key={s}><i>{i<position?"✓":i+1}</i><span><strong>{s}</strong><small>{i<=position?"Prototype status recorded":"Waiting"}</small></span></div>)}</div></section>}</main>}
 function Policy({type,theme}:{type:string;theme:typeof themeDefinitions[0]}){const titles:Record<string,string>={about:`About ${theme.name}`,contact:"Contact us","shipping-policy":"Shipping policy",returns:"Returns & refunds",privacy:"Privacy policy",terms:"Terms & conditions"};return <main className="policy-page"><span>STORE INFORMATION</span><h1>{titles[type]}</h1><p>This is sample policy content for the ShopNest frontend prototype. Store owners can replace it from settings after a backend content service is connected.</p><h2>Clear, straightforward information</h2><p>We aim to make shopping simple and transparent. Delivery estimates, eligibility, and product-specific requirements are shown before checkout.</p><h2>Questions?</h2><p>Contact hello@example-store.test or call the fictional support line shown in the store settings.</p></main>}
-function StoreFooter({theme,go,slug}:{theme:typeof themeDefinitions[0];go:(p:string)=>void;slug:string}){const [email,setEmail]=useState(""),[joined,setJoined]=useState(false);return <footer className="store-footer"><div><strong>{theme.name}</strong><p>{theme.accent}</p></div><div><b>Shop</b><button onClick={()=>go(`/store/${slug}/products`)}>All products</button><button onClick={()=>go(`/store/${slug}/track-order`)}>Track order</button></div><div><b>Information</b><button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button><button onClick={()=>go(`/store/${slug}/shipping-policy`)}>Shipping</button><button onClick={()=>go(`/store/${slug}/returns`)}>Returns</button><button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button><button onClick={()=>go(`/store/${slug}/terms`)}>Terms</button></div><form onSubmit={e=>{e.preventDefault();if(email.includes("@"))setJoined(true)}}><b>Stay in the loop</b>{joined?<p>Thanks — newsletter signup was simulated.</p>:<><label className="sr-only" htmlFor={`newsletter-${slug}`}>Email address</label><input id={`newsletter-${slug}`} type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address"/><button>Join newsletter</button></>}</form><small>© 2025 {theme.name}. Fictional ShopNest demonstration store.</small></footer>}
+function StoreFooter({theme,go,slug,footerLayout}:{theme:typeof themeDefinitions[0];go:(p:string)=>void;slug:string;footerLayout?:string}){
+  const [email,setEmail]=useState(""),[joined,setJoined]=useState(false);
+  if(footerLayout==="Minimal"){
+    return <footer className="store-footer store-footer-minimal">
+      <div className="footer-min-brand">
+        <strong>{theme.name}</strong>
+        <p>{theme.accent}</p>
+      </div>
+      <div className="footer-min-links">
+        <button onClick={()=>go(`/store/${slug}/products`)}>All products</button>
+        <button onClick={()=>go(`/store/${slug}/track-order`)}>Track order</button>
+        <button onClick={()=>go(`/store/${slug}/shipping-policy`)}>Shipping</button>
+        <button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button>
+        <button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button>
+      </div>
+      <small>© 2025 {theme.name}. Fictional ShopNest demonstration store.</small>
+    </footer>
+  }
+  return <footer className="store-footer"><div><strong>{theme.name}</strong><p>{theme.accent}</p></div><div><b>Shop</b><button onClick={()=>go(`/store/${slug}/products`)}>All products</button><button onClick={()=>go(`/store/${slug}/track-order`)}>Track order</button></div><div><b>Information</b><button onClick={()=>go(`/store/${slug}/contact`)}>Contact</button><button onClick={()=>go(`/store/${slug}/shipping-policy`)}>Shipping</button><button onClick={()=>go(`/store/${slug}/returns`)}>Returns</button><button onClick={()=>go(`/store/${slug}/privacy`)}>Privacy</button><button onClick={()=>go(`/store/${slug}/terms`)}>Terms</button></div><form onSubmit={e=>{e.preventDefault();if(email.includes("@"))setJoined(true)}}><b>Stay in the loop</b>{joined?<p>Thanks — newsletter signup was simulated.</p>:<><label className="sr-only" htmlFor={`newsletter-${slug}`}>Email address</label><input id={`newsletter-${slug}`} type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address"/><button>Join newsletter</button></>}</form><small>© 2025 {theme.name}. Fictional ShopNest demonstration store.</small></footer>
+}
+

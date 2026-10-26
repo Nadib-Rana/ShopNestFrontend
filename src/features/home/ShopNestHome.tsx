@@ -12,7 +12,7 @@ export function ShopNestHome({ go }: { go: (path: string) => void }) {
         </div>
         <nav>
           <button onClick={() => go("/store/demo")}>Product</button>
-          <button onClick={() => go("/seller/themes")}>Themes</button>
+          <button onClick={() => go("/themes")}>Themes</button>
           <button onClick={() => go("/signup")}>Pricing</button>
           <button onClick={() => window.location.href = "mailto:support@shopnest.example"}>Help</button>
         </nav>

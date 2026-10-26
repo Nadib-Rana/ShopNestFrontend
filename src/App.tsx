@@ -14,6 +14,7 @@ import { StorefrontPage } from "./features/seller/StorefrontPage"
 const SellerManagement = lazy(() => import("./features/seller/SellerManagement"))
 const CustomerStorefront = lazy(() => import("./features/storefront/CustomerStorefront"))
 const ThemeStudio = lazy(() => import("./features/themes/ThemeStudio"))
+const PublicThemesPage = lazy(() => import("./features/themes/PublicThemesPage"))
 const ShippingPage = lazy(() => import("./features/seller/ShippingPage"))
 const AnalyticsPage = lazy(() => import("./features/seller/AnalyticsPage"))
 const BillingAdminModule = lazy(() => import("./features/subscriptions/BillingAdmin").then(m => ({ default: m.SellerBilling })))
@@ -54,6 +55,15 @@ export default function App() {
   // Public Landing Page
   if (path === "/") {
     return <ShopNestHome go={go} />
+  }
+
+  // Public Themes Gallery
+  if (path === "/themes") {
+    return (
+      <Suspense fallback={<RouteLoader />}>
+        <PublicThemesPage go={go} notify={notify} />
+      </Suspense>
+    )
   }
 
   // Authentication Flows

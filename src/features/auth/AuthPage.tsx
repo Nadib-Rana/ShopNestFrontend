@@ -1,5 +1,7 @@
 import React, { useState } from "react"
 import { Icon } from "../../components/ui/Icon"
+import { setRegisteredUser } from "../../utils/auth"
+import { saveStoreThemeConfig, themeDefaults } from "../../repositories/themeStore"
 
 function Logo() {
   return (
@@ -76,9 +78,22 @@ export function AuthPage({ path, go }: { path: string; go: (path: string) => voi
     }
     setError("")
     if (isForgot) return setSubmitted(true)
-    if (isSignup) return go("/verify")
+    if (isSignup) {
+      setRegisteredUser({
+        email: String(data.get("email")),
+        name: String(data.get("name") || ""),
+      })
+      const pendingTheme = localStorage.getItem("shopnest_pending_theme")
+      if (pendingTheme) {
+        saveStoreThemeConfig({ ...themeDefaults(pendingTheme, "demo"), status: "Published" })
+      }
+      return go("/verify")
+    }
     if (isVerify) return go("/onboarding/welcome")
     if (isReset) return go("/login")
+    setRegisteredUser({
+      email: String(data.get("email")),
+    })
     go("/seller/overview")
   }
 

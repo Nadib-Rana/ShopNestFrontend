@@ -80,6 +80,7 @@ export interface StoreThemeConfig {
   storeSlug: string
   themeId: string
   logo: string
+  logoImage?: string
   primary: string
   secondary: string
   background: string
@@ -87,13 +88,39 @@ export interface StoreThemeConfig {
   font: string
   heroTitle: string
   heroText: string
+  announcementText?: string
   showCategories: boolean
   showPromo: boolean
   showTestimonials: boolean
   grid: number
-  header: string
-  footer: string
+  header: "Centered" | "Compact" | "Split" | string
+  footer: "Expanded" | "Minimal" | string
   status: "Draft" | "Published"
+
+  // Theme-specific customization options
+  fashionLookbookTitle?: string
+  fashionCollectionStyle?: string
+  shoesDropTag?: string
+  shoesBadgeText?: string
+  shoesHighlightSizes?: boolean
+  techWarrantyText?: string
+  techDealTitle?: string
+  techShowSpecs?: boolean
+  beautyRitualNote?: string
+  beautyCampaignTitle?: string
+  beautyShowRoutine?: boolean
+  groceryDeliveryArea?: string
+  groceryOfferTag?: string
+  groceryShowQuantity?: boolean
+  decorQuote?: string
+  decorRoomFocus?: string
+  decorShowTextures?: boolean
+  furnitureSubtitle?: string
+  furnitureMaterialNote?: string
+  furnitureLayout?: string
+  retailCategoryTag?: string
+  retailReturnBadge?: string
+  retailDealHighlight?: string
 }
 
 export interface BadgeProps {
