@@ -64,7 +64,7 @@ export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=
   const config=getStoreThemeConfig(slug)
   const routeTheme=themeDefinitions.find(t=>t.slug===slug)
   const customized=slug==="demo"&&section!=="preview"
-  const theme=customized?themeDefinitions.find(t=>t.id===config.themeId):routeTheme
+  const theme=customized?(themeDefinitions.find(t=>t.id===config.themeId)||themeDefinitions[0]):routeTheme
   const [cart,setCart]=useState<CartItem[]>(getCart)
   const products=(slug==="demo"&&theme?.id==="fashion"?getCommerceProducts():productsForTheme(theme?.id||"fashion")).filter(product=>product.status==="Active")
   const [query,setQuery]=useState("")

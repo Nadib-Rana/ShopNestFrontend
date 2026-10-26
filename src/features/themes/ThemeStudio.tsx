@@ -117,6 +117,7 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
         {(["desktop","tablet","mobile"] as const).map(d=><button className={device===d?"active":""} onClick={()=>setDevice(d)} key={d}>{d}</button>)}
       </div>
       <div>
+        <button className="secondary" title="View live storefront" onClick={()=>go("/store/demo")}>View store ↗</button>
         <button className="secondary" onClick={()=>setReset(true)}>Reset</button>
         <button className="secondary" onClick={()=>{saveStoreThemeConfig({...config,status:"Draft"});setSaved({...config,status:"Draft"});notify("Theme draft saved locally")}}>Save draft</button>
         <button className="primary" onClick={()=>{const next={...config,status:"Published" as const};saveStoreThemeConfig(next);setSaved(next);notify("Theme published to the demo storefront")}}>Publish</button>
@@ -124,10 +125,27 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
     </header>
     <div className="customizer-body">
       <aside className="customizer-controls">
-        <Control title="Theme">
-          <select value={config.themeId} onChange={e=>setConfig(themeDefaults(e.target.value,"demo"))}>
-            {themeDefinitions.map(t=><option value={t.id} key={t.id}>{t.title}</option>)}
-          </select>
+        <Control title="Active Store Theme">
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <strong style={{ fontSize: "13px" }}>{theme.title}</strong>
+              <span style={{ fontSize: "10px", background: "#eaf8f2", color: "#16845a", padding: "3px 8px", borderRadius: "12px", fontWeight: 700 }}>
+                Active Theme
+              </span>
+            </div>
+            <span style={{ color: "#667085", fontSize: "11px" }}>{theme.label} · {theme.name}</span>
+            <p style={{ color: "#8490a2", fontSize: "10px", margin: "4px 0 8px", lineHeight: "1.4" }}>
+              Full access to customize your active storefront theme below.
+            </p>
+            <button
+              type="button"
+              className="secondary"
+              style={{ fontSize: "10px", padding: "5px 10px", alignSelf: "flex-start" }}
+              onClick={() => go("/seller/themes")}
+            >
+              Change theme in Gallery →
+            </button>
+          </div>
         </Control>
 
         {/* Theme-Specific Controls (renders only for the active theme) */}

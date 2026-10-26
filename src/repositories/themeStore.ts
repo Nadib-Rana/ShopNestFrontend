@@ -39,11 +39,11 @@ export const getStoreThemeConfig=(storeSlug="demo"):StoreThemeConfig=>{
   try{
     const all=JSON.parse(localStorage.getItem(key)||"{}");
     const loaded=all[storeSlug];
-    if(!loaded)return defaults(storeSlug);
-    const specific=themeSpecificDefaults[loaded.themeId]||{};
-    return {...defaults(storeSlug),...specific,...loaded}
+    if(!loaded)return themeDefaults("fashion",storeSlug);
+    const base=themeDefaults(loaded.themeId||"fashion",storeSlug);
+    return {...base,...loaded}
   }catch{
-    return defaults(storeSlug)
+    return themeDefaults("fashion",storeSlug)
   }
 }
 export const saveStoreThemeConfig=(config:StoreThemeConfig)=>{

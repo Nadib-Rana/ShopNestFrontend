@@ -247,4 +247,21 @@ describe("Themes & Customization", () => {
     expect(currentPath).toBe("/seller/customizer")
     expect(getStoreThemeConfig("demo").themeId).toBe("shoes")
   })
+
+  it("customizer locks full access to selected theme and storefront renders that selected theme", () => {
+    // Select Electronics theme
+    saveStoreThemeConfig({ ...themeDefaults("electronics", "demo"), storeSlug: "demo" })
+
+    // Customizer renders active Electronics theme and tech controls
+    const custRes = render(<ThemeStudio path="/seller/customizer" go={() => {}} notify={() => {}} />)
+    expect(custRes.getByText("Active Store Theme")).toBeInTheDocument()
+    expect(custRes.getAllByText("Electronics Store")[0]).toBeInTheDocument()
+    expect(custRes.getByText("Electronics & Tech Settings")).toBeInTheDocument()
+
+    // Storefront at /store/demo renders Electronics Store
+    const storeRes = render(<CustomerStorefront path="/store/demo" go={() => {}} />)
+    expect(storeRes.container.querySelector(".theme-electronics")).toBeInTheDocument()
+    expect(storeRes.container.querySelector(".header-electronics")).toBeInTheDocument()
+    expect(storeRes.getByText("Featured technology")).toBeInTheDocument()
+  })
 })
