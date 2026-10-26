@@ -14,23 +14,21 @@ ShopNest is a single-page React application (SPA) bundled with Vite. It uses a c
 Browser
   └── index.html (Vite shell)
         └── src/main.tsx (React root mount)
-              └── src/App.tsx (Router + Seller Dashboard Shell)
-                    ├── ShopNestHome           (Landing page)
-                    ├── AuthPage               (Auth screens)
-                    ├── Onboarding             (6-step wizard)
-                    ├── AdminApp               (Super Admin)  ← BillingAdmin.tsx
-                    ├── CustomerStorefront     (Public storefronts)  ← CustomerStorefront.tsx
-                    └── Seller Dashboard Shell
-                          ├── Overview         (Dashboard)
-                          ├── SellerManagement ← SellerManagement.tsx
-                          │     ├── Products
-                          │     ├── Categories
-                          │     ├── Inventory
-                          │     ├── Orders
-                          │     └── Customers
-                          ├── Storefront page
-                          ├── ThemeStudio      ← ThemeStudio.tsx
-                          └── SellerBilling    ← BillingAdmin.tsx
+              └── src/App.tsx (Root Router + Code-Split Suspense Boundaries)
+                    ├── ShopNestHome               (Public Landing page)
+                    ├── PublicThemesPage           (Public Theme Gallery & Preview)
+                    ├── AuthPage                   (Auth screens & password reset)
+                    ├── Onboarding                 (6-step wizard)
+                    ├── AdminApp (lazy)            (Super Admin Queue)
+                    ├── CustomerStorefront (lazy)  (Public multi-theme storefronts & cart/checkout)
+                    └── Seller Dashboard Shell (SellerLayout)
+                          ├── Overview             (Dashboard KPIs & sales chart)
+                          ├── SellerManagement     (Products, Categories, Inventory, Orders, Customers)
+                          ├── Storefront           (Domain & storefront controls)
+                          ├── ShippingPage         (Shipping zones & courier integrations)
+                          ├── AnalyticsPage        (Sales metrics, AOV, revenue analytics)
+                          ├── ThemeStudio (lazy)   (Active theme live customizer & studio)
+                          └── SellerBilling (lazy) (Subscription plans & payment proof)
 ```
 
 ---
@@ -38,17 +36,18 @@ Browser
 ## Routing Architecture
 
 ```
-Router (useRoute hook in App.tsx)
+Router (useRoute hook in src/hooks/useRoute.ts)
   ↓
 path = window.location.pathname
   ↓
 Match:
   /                    → ShopNestHome
+  /themes              → PublicThemesPage (Public theme gallery with registration gating)
   /login|/signup|...   → AuthPage
   /onboarding/*        → Onboarding
-  /admin/*             → AdminApp
-  /store/*             → CustomerStorefront
-  /seller/*            → Seller Dashboard (sidebar + header + content)
+  /admin/*             → AdminApp (lazy loaded)
+  /store/*             → CustomerStorefront (lazy loaded)
+  /seller/*            → Seller Dashboard Shell (SellerLayout + feature workspace)
   else                 → NotFound
 ```
 

@@ -161,24 +161,92 @@ Customer places order at /store/demo/checkout
 ```
 /seller/themes
   → 8 theme cards, each showing visual preview and description
-  → "Preview" → /store/:slug/preview (adds preview banner)
-  → "Use theme" → applies theme defaults to the customizer config
+  → "Preview" → /store/:slug/preview (sets shopnest_preview_return = '/seller/themes')
+  → "Customize Active Theme" / "Use theme" → navigates to /seller/customizer
 
 /seller/customizer
-  → Left panel: controls
-    - Theme selector
-    - Logo text
-    - Colors: primary, secondary, background, text (color pickers)
-    - Typography: font family (Modern, Editorial, Friendly)
-    - Hero: title and description text areas
-    - Homepage sections: categories, promo, testimonials (toggles)
-    - Product grid: 2/3/4 columns
-    - Header style: Centered, Compact, Split
-    - Footer style: Expanded, Minimal
-  → Right panel: live preview (scales with device tab)
-    - Desktop, Tablet, Mobile tabs change preview width
-    - Preview reflects all control changes instantly
-  → "Save draft" → saves config with status "Draft"
-  → "Publish" → saves config with status "Published" → visible in /store/demo
-  → "Reset" → confirmation → restores theme defaults
+  → Isolated to Active Store Theme: Controls are scoped to current store theme only
+  → Top bar: Store name, active theme badge, device switcher (Desktop, Tablet, Mobile), Save Draft, Publish
+  → Left panel: Theme-specific controls
+    - General: Logo text, tagline, announcement bar
+    - Colors: Theme-tailored color pickers (primary, secondary, background, accent)
+    - Typography: Curated theme font pairing (e.g. Syne/Inter, Outfit, Playfair, Cormorant)
+    - Hero & Banner: Title, subtitle, CTA button text, background image
+    - Sections: Category grid, promo cards, testimonial stories, newsletter toggles
+    - Layout: Column density, grid styles, header & footer variations
+  → Right panel: Live Interactive Preview
+    - Independent viewport scrolling: Outer frame has fixed height with overflow-hidden;
+      inner preview container has independent vertical scrolling (`overflow-y: auto`)
+    - Smooth responsive resizing across Desktop (100%), Tablet (768px), and Mobile (375px)
+    - Reflects all live edits synchronously
+  → Preview Return Memory: Clicking "Close preview" reads `sessionStorage['shopnest_preview_return']`
+    and reliably returns the seller to /seller/customizer or /seller/themes
+  → "Save draft" → persists configuration as "Draft"
+  → "Publish" → persists configuration as "Published" → active immediately on live storefront
+```
+
+## 8. Public Theme Discovery & Registration Gating Flow
+
+```
+/themes
+  → Accessible publicly without requiring authentication
+  → Displays public ShopNest navigation (Features, How it works, Pricing, Themes, Login, Start Free Trial)
+  → 8 theme cards with category tags, descriptions, live feature pills
+  → Click "Preview":
+      → Saves `shopnest_preview_return = '/themes'` in sessionStorage
+      → Navigates to `/store/:slug/preview`
+      → Clicking "Close preview" returns directly to `/themes`
+  → Click "Use Theme":
+      → Auth check: calls `isUserRegistered()` (inspects localStorage for `shopnest-user` or `shopnest-token`)
+      → IF REGISTERED:
+          → Saves theme ID to store configuration
+          → Navigates to `/seller/customizer`
+      → IF NOT REGISTERED:
+          → Saves `pending_theme_selection` in localStorage
+          → Redirects to `/signup` with message prompting seller registration
+          → Theme is auto-applied upon completing onboarding
+```
+
+## 9. Storefront Mobile Experience & Drawer Navigation
+
+```
+/store/:slug (Mobile Viewport < 768px)
+  → Responsive theme header displays brand logo, quick cart badge, and hamburger toggle button (`#store-mobile-toggle`)
+  → Tapping hamburger triggers slide-in mobile navigation drawer (`#store-mobile-drawer`):
+      - Store brand header with close button (`#store-mobile-drawer-close`)
+      - Navigation links: Home, All Products, Categories, Track Order, Policies
+      - Category shortcuts with theme-specific styling
+      - Quick cart summary with one-tap checkout access
+  → Tapping backdrop or close button dismisses drawer smoothly
+```
+
+## 10. Shipping & Logistics Management Flow
+
+```
+/seller/shipping
+  → Delivery Zones & Pricing:
+      - Inside Dhaka: Flat rate (৳60), 24-48h delivery window
+      - Outside Dhaka: Flat rate (৳120), 48-72h delivery window
+      - Free Shipping Threshold: Configurable order value minimum (e.g. ৳3,000)
+      - Cash on Delivery (COD): Toggle availability per zone
+  → Courier Integrations:
+      - Steadfast Courier: API status, live tracking sync toggle, merchant code
+      - Pathao Logistics: API status, webhook integration toggle, secret token
+      - RedX Delivery: API status, auto-booking toggle
+  → Save Changes: Persists shipping configuration to localStorage
+```
+
+## 11. Business Analytics Flow
+
+```
+/seller/analytics
+  → Time Range Filter: Today, 7 Days, 30 Days, 90 Days
+  → Key Performance Indicators:
+      - Gross Sales Revenue (৳) with period-over-period percentage delta
+      - Total Orders count with completed vs pending breakdown
+      - Average Order Value (AOV)
+      - Store Conversion Rate (%)
+  → Interactive SVG Sales Chart: Day-by-day revenue visualization
+  → Payment Channel Breakdown: bKash, Nagad, Cash on Delivery, Credit/Debit Cards
+  → Top Products Leaderboard: Ranked by unit sales and gross revenue
 ```

@@ -1,37 +1,34 @@
 # ShopNest — Next Steps
 
-> Short, actionable list of future tasks in dependency order.
+> Actionable list of future tasks in priority and dependency order.
 > Last updated: 2026-10-26
 
 ---
 
-## Completed in Current Iteration (Phases 1 - 4) ✅
-- **Phase 1 (Audit)**: Discovered architecture, routes, schemas, and baseline metrics.
-- **Phase 2 (Modular Refactoring)**:
-  - Extracted shared utilities (`src/utils/format.ts`), UI primitives (`src/components/ui/`), shared components (`src/components/shared/`), constants (`src/constants/index.ts`), types (`src/types/index.ts`), router hook (`src/hooks/useRoute.ts`), layouts (`src/app/layouts/SellerLayout.tsx`), and feature modules (`src/features/`).
-  - Streamlined `src/App.tsx` into a lean, declarative root router.
-  - Resolved all 14 TypeScript compilation errors (0 errors now reported by `tsc --noEmit`).
-- **Phase 3 (Code Cleanup & Code Splitting)**:
-  - Consolidated duplicate `money()` formatters and Badge/Status elements.
-  - Implemented dynamic `React.lazy()` route splitting, reducing initial JS bundle from 355 KB to 259 KB.
-- **Phase 4 (Technical Documentation)**:
-  - Completed all 12 documents in `docs/` and 7 tracking documents in `project-planning/`.
-  - Authored comprehensive `README.md` and updated `AGENTS.md` with domain architectural guidance.
+## Completed in Recent Iterations (Phases 1 — 6) ✅
+1. **Repository Audit & Modular Refactoring:** Decomposed monolithic legacy files into `src/features/`, `src/components/`, `src/repositories/`, `src/utils/`, and `src/hooks/`.
+2. **TypeScript & Bundling Optimization:** 0 compilation errors via `ES2022` lib target, lazy route splitting across 10 dynamic chunks.
+3. **8 Distinct Storefront Themes:** Fully customized visual identities, hero banners, product cards, category grids, and promo stories for Fashion, Shoes, Electronics, Beauty, Grocery, Decor, Furniture, and Retail.
+4. **Header & Footer Customization Engine:** Functional Centered/Compact/Split headers and Expanded/Minimal footers connected live to customizer and storefronts.
+5. **Public Theme Discovery (`/themes`):** Gallery with live preview and smart registration check (redirects to `/signup` or navigates to `/seller/customizer`).
+6. **Active Theme Isolation & Preview Memory:** Customizer locks access to the active theme, and preview close button returns to `/seller/themes` or `/themes`.
+7. **Seller Workspaces:** Implemented interactive `ShippingPage.tsx` (`/seller/shipping`) and `AnalyticsPage.tsx` (`/seller/analytics`).
+8. **UI Scrolling & Mobile Responsiveness:** Fixed live preview vertical scrolling on desktop/tablet/mobile, and added mobile hamburger drawer navigation with search for all themes.
+9. **Automated Testing Suite:** 30 unit & integration tests passing with Vitest and React Testing Library (`npm test`).
 
 ---
 
-## Upcoming Recommended Tasks (Phase 5: Frontend Completion)
+## Upcoming Recommended Tasks (Phase 7: Backend Scaffolding & Settings)
 
-### 1. SN-FE-NEW-01 — Implement Shipping & Delivery Workspace
-- **Route:** `/seller/shipping`
-- **Scope:** Convert coming soon placeholder into interactive shipping rules manager (e.g., Inside Dhaka vs Outside Dhaka shipping rates, delivery courier selection).
+### 1. SN-FE-022 — Implement Store Settings Workspace
+- **Route:** `/seller/settings`
+- **Scope:** Replace placeholder with interactive store profile (store name, currency selector, logo upload, email, contact phone, social media links).
 
-### 2. SN-FE-NEW-02 — Implement Analytics Workspace
-- **Route:** `/seller/analytics`
-- **Scope:** Implement detailed revenue trends, average order value (AOV), sales breakdown by category, and customer retention metrics.
+### 2. SN-BE-001 — Backend Tech Stack & Architecture Initialization
+- **Scope:** Initialize Node.js/TypeScript backend service (NestJS or Express) with structured controllers, services, and middlewares matching `docs/ARCHITECTURE.md`.
 
-### 3. SN-FE-NEW-03 — Component Unit Testing Setup
-- **Scope:** Configure Vitest and React Testing Library to execute automated tests against `useRoute`, `format.ts`, and core UI components.
+### 3. SN-BE-002 — Multi-Tenant Database Schema Design
+- **Scope:** Implement PostgreSQL schema via Prisma ORM for Tenants, Users, Stores, Products, Orders, Categories, and ThemeConfigs conforming to `docs/DATA_MODELS.md`.
 
-### 4. SN-BE-001 — Backend API Contract Implementation
-- **Scope:** Prepare Node.js/Express or NestJS backend scaffolding conforming to `docs/API_CONTRACTS.md` and `docs/DATA_MODELS.md`.
+### 4. SN-BE-003 — Authentication & JWT Guard Service
+- **Scope:** Build registration, login, token refresh, and role-based access control (SuperAdmin, SellerOwner, SellerStaff, Customer).

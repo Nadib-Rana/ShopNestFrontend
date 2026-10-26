@@ -15,6 +15,7 @@ Route matching is done by string comparison and `startsWith` in the root `App` c
 | Path | Component | Description |
 |------|-----------|-------------|
 | `/` | `ShopNestHome` | Landing page with nav to login, signup, demo store, themes |
+| `/themes` | `PublicThemesPage` | Public theme gallery & live preview with registration gating |
 | `/login` | `AuthPage` | Login form |
 | `/signup` | `AuthPage` | Registration form |
 | `/forgot-password` | `AuthPage` | Password recovery form |
@@ -55,16 +56,16 @@ All seller routes render within the `App` component with the sidebar layout.
 | `/seller/customers/:id` | `SellerManagement → CustomerDetails` | Customer detail with order history |
 | `/seller/storefront` | `Storefront` | Storefront overview with publish |
 | `/seller/themes` | `ThemeStudio` (gallery mode) | Theme gallery |
-| `/seller/customizer` | `ThemeStudio` (customizer mode) | Live theme customizer |
-| `/seller/shipping` | `ComingSoon` | Not implemented yet |
+| `/seller/customizer` | `ThemeStudio` (customizer mode) | Live theme customizer (locked to active store theme) |
+| `/seller/shipping` | `ShippingPage` | Interactive shipping zones (Inside/Outside Dhaka) & courier status (Steadfast, Pathao, RedX) |
 | `/seller/subscription` | `SellerBilling` | Subscription plans |
 | `/seller/subscription/pay` | `SellerBilling` | Manual payment form |
 | `/seller/subscription/review` | `SellerBilling` | Payment review step |
 | `/seller/subscription/confirmation` | `SellerBilling` | Submission confirmed |
 | `/seller/subscription/history` | `SellerBilling` | Payment history list |
 | `/seller/subscription/PAY-xxxx` | `SellerBilling` | Individual payment detail |
-| `/seller/analytics` | `ComingSoon` | Not implemented yet |
-| `/seller/settings` | `ComingSoon` | Not implemented yet |
+| `/seller/analytics` | `AnalyticsPage` | Sales performance, gross revenue, order volume, AOV, top products, payment breakdown |
+| `/seller/settings` | `ComingSoon` | Store settings (scheduled for Phase 7) |
 
 ---
 

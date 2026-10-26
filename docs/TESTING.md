@@ -3,9 +3,24 @@
 > Last updated: 2026-10-26
 
 ## Automated Tests
-**None exist.** The project has no testing framework installed.
 
-**Recommendation:** Add Vitest in Phase 6 for unit tests of utility functions and repository functions.
+**Fully Configured & Passing.** ShopNest features an automated test suite powered by **Vitest 4**, **jsdom**, and **@testing-library/react**:
+
+- **Runner**: `vitest run` (executed via `npm test`)
+- **Environment**: jsdom with `@testing-library/jest-dom/vitest` matchers and `localStorage`/`sessionStorage` mocks
+- **Coverage**: 7 test suites, 30 automated unit and integration tests
+
+### Test Suite Inventory
+
+| Test File | Target Feature | Tests |
+|-----------|---------------|-------|
+| `src/utils/format.test.ts` | Currency formatting (`money()`), number formatting, slug generation | 5 |
+| `src/repositories/commerceStore.test.ts` | LocalStorage commerce store persistence & order management | 4 |
+| `src/features/storefront/CustomerStorefront.test.tsx` | 8 distinct storefront themes, product cards, category grids, mobile drawer | 6 |
+| `src/features/themes/ThemeStudio.test.tsx` | Active theme customizer isolation, control rendering, preview updates | 4 |
+| `src/features/themes/PublicThemesPage.test.tsx` | Public theme gallery, preview links, registration check gating | 4 |
+| `src/features/seller/ShippingPage.test.tsx` | Shipping zones (Dhaka/Outside), COD toggles, courier integration status | 4 |
+| `src/features/seller/AnalyticsPage.test.tsx` | Business KPIs (Revenue, Orders, AOV), date filter tabs, payment breakdown | 3 |
 
 ---
 
@@ -13,20 +28,21 @@
 
 | Command | Purpose |
 |---------|---------|
+| `npm test` | Run all 30 automated Vitest unit and integration tests |
 | `npm run dev` | Start development server on port 8443 |
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Preview the production build locally |
-| `npx tsc --noEmit` | Type-check without building |
+| `npx tsc --noEmit` | Type-check without building (0 errors) |
 
 ---
 
-## Baseline Results (2026-10-26 — Before Refactoring)
+## Current Verification Results (2026-10-26)
 
 | Check | Result |
 |-------|--------|
-| `npm run build` | ✅ Success (387ms) |
-| `npx tsc --noEmit` | ⚠️ 14 pre-existing errors |
-| Automated tests | ❌ None exist |
+| `npm test` | ✅ 7/7 test files passed, 30/30 tests passed |
+| `npx tsc --noEmit` | ✅ 0 errors (strict TypeScript clean) |
+| `npm run build` | ✅ Success (~490ms, zero bundle warnings) |
 
 ---
 
@@ -141,10 +157,42 @@ Run this checklist after any significant change to verify no regressions.
 - [ ] All admin nav items navigate correctly
 - [ ] "Seller view" button → navigates to `/seller/overview`
 
-### J — General
+### J — Public Themes & Registration Gating
+
+- [ ] Navigate to `/themes` → gallery renders 8 theme cards with tags & descriptions
+- [ ] Click "Preview" on any theme → opens `/store/:slug/preview` with preview banner
+- [ ] Click "Close preview" → returns to `/themes` (verifying preview memory)
+- [ ] As an unregistered user, click "Use theme" → redirected to `/signup` with notification
+- [ ] As an authenticated seller, click "Use theme" → theme saved and redirected to `/seller/customizer`
+
+### K — Shipping & Logistics Workspace
+
+- [ ] Navigate to `/seller/shipping` → interactive delivery zones render
+- [ ] Change Inside Dhaka flat rate (৳60) and Outside Dhaka (৳120) → saves configuration
+- [ ] Toggle COD on/off → reflected in settings
+- [ ] Toggle Courier connections (Steadfast, Pathao, RedX) → status reflects active connection
+
+### L — Business Analytics Workspace
+
+- [ ] Navigate to `/seller/analytics` → metric cards (Revenue, Orders, AOV, Conversion) render
+- [ ] Switch date filter tabs (Today, 7D, 30D, 90D) → metric values dynamically recalculate
+- [ ] SVG Sales Trend chart renders with axes and gradient area
+- [ ] Payment breakdown lists bKash, Nagad, COD, Card distribution
+- [ ] Top products leaderboard renders ranked units sold
+
+### M — Mobile Storefront & Navigation Drawer
+
+- [ ] Resize viewport to mobile width (< 768px) on any of the 8 storefront themes
+- [ ] Mobile header displays hamburger menu button (`#store-mobile-toggle`)
+- [ ] Click hamburger button → navigation drawer opens smoothly (`#store-mobile-drawer`)
+- [ ] Drawer displays store brand, nav links, category quick links, and cart summary
+- [ ] Click close button or backdrop → drawer dismisses cleanly
+
+### N — General
 
 - [ ] Notification bell opens popover with 3 items
 - [ ] Notification items navigate to correct pages
 - [ ] 404 page shown for unknown routes
 - [ ] "Return home" on 404 → navigates to `/`
 - [ ] Page title updates correctly for each section
+

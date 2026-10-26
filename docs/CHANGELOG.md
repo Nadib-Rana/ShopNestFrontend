@@ -5,6 +5,43 @@
 
 ---
 
+## [1.2.0] — 2026-10-26 — Themes Customization, Public Themes, Workspaces & Responsive Navigation
+
+### Added (Features & Testing)
+- **Automated Test Suite (Vitest)**:
+  - Setup Vitest test runner and `jsdom` environment in `vite.config.ts` and `src/test/setup.ts`.
+  - Implemented 30 unit & integration tests covering format utilities, `useRoute`, UI primitives (`Badge`, `Status`, `Icon`), `Onboarding` wizard, and `ThemeCustomization` (persisting configs, isolated themes, navigation, public redirect).
+- **8 Distinct Storefront Themes**:
+  - Implemented unique visual aesthetics, custom heroes, category arrangements, product cards, and promo sections for:
+    1. Fashion (Trendora)
+    2. Shoes (SoleCraft)
+    3. Electronics (NOVA)
+    4. Beauty (Bloom)
+    5. Grocery (FreshMarket)
+    6. Decor (Aura Living)
+    7. Furniture (Forma)
+    8. Retail (OmniStore)
+- **Theme-Specific Customization Controls**:
+  - Added drop tags, warranty badges, ritual notes, delivery pills, lookbook titles, distinct hero text, and promo banner options in Theme Studio.
+  - Implemented functional Header styles (Centered, Compact, Split) and Footer styles (Expanded, Minimal) reflecting live in customizer preview and storefront.
+- **Public Themes Gallery (`/themes`)**:
+  - Created `src/features/themes/PublicThemesPage.tsx` with responsive theme cards, live preview links, and category filters.
+  - Implemented smart registration check: clicking "Use theme" redirects unregistered guests to `/signup` and registered sellers directly to `/seller/customizer`.
+- **Preview Origin Memory**:
+  - Implemented `shopnest_preview_return` to remember caller path; clicking "Close Preview" returns sellers to `/seller/themes` and public guests to `/themes`.
+- **Completed Seller Workspaces**:
+  - `src/features/seller/ShippingPage.tsx` (`/seller/shipping`) with delivery zones, couriers, and free delivery thresholds.
+  - `src/features/seller/AnalyticsPage.tsx` (`/seller/analytics`) with revenue metrics, AOV, sales charts, and top products.
+- **Mobile Responsive Navigation**:
+  - Built mobile hamburger button (`store-mobile-toggle`) and full slide-out drawer (`store-mobile-drawer`) with product search, category navigation, policy links, and cart badge.
+  - Added responsive hamburger toggle and dropdown to `src/components/shared/PublicNav.tsx`.
+
+### Fixed & Optimized
+- **Customizer Live Preview Scrolling**: Fixed flex-stretch constraints and double-main margins, enabling full top-to-bottom vertical scrolling in Desktop, Tablet, and Mobile preview viewports.
+- **Header Layout Visibility on Mobile**: Replaced hidden desktop navigation with the accessible touch drawer menu across all 8 themes.
+
+---
+
 ## [1.1.0] — 2026-10-26 — Phase 2 & 3 Modular Architecture & Optimization
 
 ### Added (Code Structure)
