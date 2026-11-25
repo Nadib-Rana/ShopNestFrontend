@@ -27,6 +27,7 @@ export const shopnestApi = {
       apiClient.post("/auth/forgot-password", { email }, { skipAuthRefresh: true }),
     resetPassword: (payload: { email: string; code: string; newPassword: string }) =>
       apiClient.post("/auth/reset-password", payload, { skipAuthRefresh: true }),
+    logout: () => apiClient.post("/auth/logout", {}, { skipAuthRefresh: true }),
     me: () => apiClient.get("/auth/me"),
   },
 

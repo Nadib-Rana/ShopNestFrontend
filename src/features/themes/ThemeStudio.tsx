@@ -93,9 +93,9 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
   const handleLogoUpload=(e:React.ChangeEvent<HTMLInputElement>)=>{
     const file=e.target.files?.[0]
     if(!file)return
-    const validTypes=["image/png","image/jpeg","image/jpg","image/svg+xml","image/webp","image/gif"]
-    if(!validTypes.includes(file.type)&&!file.type.startsWith("image/")){
-      notify("Please select a valid image file (PNG, JPG, SVG, WebP, GIF).")
+    const validTypes=["image/png","image/jpeg","image/webp","image/gif"]
+    if(!validTypes.includes(file.type)){
+      notify("Please select a valid raster image file (PNG, JPG, WebP, GIF).")
       e.target.value=""
       return
     }

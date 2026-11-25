@@ -5,6 +5,8 @@ import { getCommerceOrders } from "../../repositories/commerceStore"
 import { getStoreSettings } from "../../repositories/settingsStore"
 import { clearRegisteredUser, getRegisteredUser } from "../../utils/auth"
 import { getActiveStoreSlug } from "../../services/apiClient"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
 import type { NavItem } from "../../types"
 
 export interface SellerLayoutProps {
@@ -39,7 +41,7 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() || "")
     .join("") || "SR"
-  const liveOrderCount = getCommerceOrders().length + 3
+  const liveOrderCount = canCallProtectedApi() ? getCommerceOrders().length : getCommerceOrders().length + 3
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -66,7 +68,10 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
     setSearchTerm("")
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (canCallProtectedApi()) {
+      await shopnestApi.auth.logout().catch(() => undefined)
+    }
     clearRegisteredUser()
     go("/login")
   }
