@@ -9,6 +9,8 @@ import {
   saveStoreSettings,
   resetStoreSettings,
 } from "../../repositories/settingsStore"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
 
 export interface SettingsPageProps {
   notify: (message: string) => void
@@ -46,12 +48,18 @@ export default function SettingsPage({ notify }: SettingsPageProps) {
     }
 
     saveStoreSettings(settings)
+    if (canCallProtectedApi()) {
+      void shopnestApi.settings.update(settings).catch(() => undefined)
+    }
     setIsDirty(false)
     notify("Store settings have been saved successfully.")
   }
 
   const handleResetToDefaults = () => {
     const defaults = resetStoreSettings()
+    if (canCallProtectedApi()) {
+      void shopnestApi.settings.reset().catch(() => undefined)
+    }
     setSettings(defaults)
     setIsDirty(false)
     setResetConfirmOpen(false)

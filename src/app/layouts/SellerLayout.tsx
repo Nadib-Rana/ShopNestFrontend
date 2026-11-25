@@ -1,6 +1,10 @@
-import React, { useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Icon } from "../../components/ui/Icon"
 import { navItems, sellerRoutes } from "../../constants"
+import { getCommerceOrders } from "../../repositories/commerceStore"
+import { getStoreSettings } from "../../repositories/settingsStore"
+import { clearRegisteredUser, getRegisteredUser } from "../../utils/auth"
+import { getActiveStoreSlug } from "../../services/apiClient"
 import type { NavItem } from "../../types"
 
 export interface SellerLayoutProps {
@@ -14,6 +18,58 @@ export interface SellerLayoutProps {
 export function SellerLayout({ children, path, go, toast, active }: SellerLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  const settings = getStoreSettings()
+  const user = getRegisteredUser()
+  const activeSlug = getActiveStoreSlug()
+  const displayDomain = `${activeSlug === "demo" ? "trendora" : activeSlug}.shopnest.app`
+  const storeName = settings.storeName || "Trendora Fashion"
+  const storeInitials = storeName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || "")
+    .join("") || "SN"
+  const ownerName = user?.name || user?.email?.split("@")[0] || "Saif Rahman"
+  const ownerInitials = ownerName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || "")
+    .join("") || "SR"
+  const liveOrderCount = getCommerceOrders().length + 3
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [])
+
+  const handleGlobalSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return
+    if (q.startsWith("sn-") || q.includes("order")) {
+      go("/seller/orders")
+    } else if (q.includes("customer")) {
+      go("/seller/customers")
+    } else {
+      go("/seller/products")
+    }
+    setSearchTerm("")
+  }
+
+  const handleLogout = () => {
+    clearRegisteredUser()
+    go("/login")
+  }
 
   return (
     <div className="app-shell">
@@ -23,14 +79,21 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
           <strong>ShopNest</strong>
           <button className="mobile-close" onClick={() => setMobileOpen(false)}>×</button>
         </div>
-        <div className="store-switcher">
-          <div className="store-avatar">TF</div>
+        <button
+          type="button"
+          className="store-switcher"
+          onClick={() => {
+            go("/seller/settings")
+            setMobileOpen(false)
+          }}
+        >
+          <div className="store-avatar">{storeInitials}</div>
           <div>
-            <strong>Trendora Fashion</strong>
-            <span>trendora.shopnest.app</span>
+            <strong>{storeName}</strong>
+            <span>{displayDomain}</span>
           </div>
           <Icon name="arrow" size={15} />
-        </div>
+        </button>
         <nav>
           <p className="nav-label">Workspace</p>
           {navItems.slice(0, 6).map((item: NavItem) => (
@@ -44,7 +107,7 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
-              {item.count && <em>{item.count}</em>}
+              {item.label === "Orders" && <em>{liveOrderCount}</em>}
             </button>
           ))}
           <p className="nav-label">Store management</p>
@@ -81,10 +144,14 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
             <Icon name="help" />
             <span>Help & support</span>
           </button>
+          <button type="button" onClick={handleLogout}>
+            <Icon name="arrow" size={15} />
+            <span>Log out</span>
+          </button>
           <div className="profile">
-            <div className="avatar">SR</div>
+            <div className="avatar">{ownerInitials}</div>
             <div>
-              <strong>Saif Rahman</strong>
+              <strong>{ownerName}</strong>
               <span>Store owner</span>
             </div>
             <Icon name="dots" />
@@ -111,13 +178,16 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
               >
                 <Icon name="menu" />
               </button>
-              <div className="search-field">
+              <form className="search-field" onSubmit={handleGlobalSearch}>
                 <Icon name="search" />
                 <input
+                  ref={searchInputRef}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search orders, products, customers... (⌘K)"
                   aria-label="Search ShopNest"
                 />
-              </div>
+              </form>
             </div>
             <div className="header-actions">
               <button
@@ -129,7 +199,7 @@ export function SellerLayout({ children, path, go, toast, active }: SellerLayout
                 <Icon name="bell" />
                 <i />
               </button>
-              <button className="preview-button" onClick={() => go("/store/demo")}>
+              <button className="preview-button" onClick={() => go(`/store/${activeSlug}`)}>
                 <Icon name="external" />View store
               </button>
             </div>

@@ -43,6 +43,14 @@ const defaults=(storeSlug:string):StoreThemeConfig=>({
   storeSlug,themeId:"fashion",logo:"TRENDORA",logoImage:"",primary:"#755b46",secondary:"#eae2d7",background:"#f7f5f0",text:"#24201c",font:"Editorial",heroTitle:"Quiet confidence, thoughtfully worn.",heroText:"Editorial collections and refined essentials.",announcementText:"The summer edit · Complimentary delivery over ৳3,000",showCategories:true,showPromo:true,showTestimonials:true,grid:4,header:"Centered",footer:"Expanded",status:"Published",
   ...themeSpecificDefaults.fashion
 })
+export const hasSavedStoreThemeConfig=(storeSlug:string):boolean=>{
+  try{
+    const all=JSON.parse(localStorage.getItem(key)||"{}");
+    return Boolean(all[storeSlug]);
+  }catch{
+    return false;
+  }
+}
 export const getStoreThemeConfig=(storeSlug="demo"):StoreThemeConfig=>{
   try{
     const all=JSON.parse(localStorage.getItem(key)||"{}");
@@ -61,18 +69,20 @@ export const saveStoreThemeConfig=(config:StoreThemeConfig)=>{
   all[`${config.storeSlug}__theme_${config.themeId}`]=config;
   localStorage.setItem(key,JSON.stringify(all))
 }
-export const themeDefaults=(themeId:string,storeSlug="demo"):StoreThemeConfig=>{
+export const themeDefaults=(themeId:string,storeSlug="demo",ignoreCache=false):StoreThemeConfig=>{
   const theme=themeDefinitions.find(item=>item.id===themeId)||themeDefinitions[0];
   const colors:Record<string,[string,string,string,string]>={fashion:["#755b46","#eae2d7","#f7f5f0","#24201c"],shoes:["#f4511e","#e4e4df","#f4f4f1","#111111"],electronics:["#1769e0","#e5edfa","#f5f7fa","#12203a"],beauty:["#a35669","#f2e2e4","#fbf5f4","#4c3035"],grocery:["#3d842f","#e5f0dc","#f8faf4","#25321f"],decor:["#8a674e","#e8dfd2","#f5f1eb","#3e372f"],furniture:["#35564a","#dce3de","#eeeae3","#1d211f"],retail:["#6657d8","#e9e7fb","#f6f7fb","#20263a"]};
   const c=colors[theme.id]||colors.fashion;
   const specific=themeSpecificDefaults[theme.id]||{};
-  try{
-    const all=JSON.parse(localStorage.getItem(key)||"{}");
-    const cached=all[`${storeSlug}__theme_${theme.id}`];
-    if(cached){
-      return {...defaults(storeSlug),...specific,...cached,storeSlug,themeId:theme.id}
-    }
-  }catch{}
+  if(!ignoreCache){
+    try{
+      const all=JSON.parse(localStorage.getItem(key)||"{}");
+      const cached=all[`${storeSlug}__theme_${theme.id}`];
+      if(cached){
+        return {...defaults(storeSlug),...specific,...cached,storeSlug,themeId:theme.id}
+      }
+    }catch{}
+  }
   const baseAnnouncement=theme.id==="fashion"?"The summer edit · Complimentary delivery over ৳3,000":theme.id==="shoes"?"FREE RETURNS · MEMBER EXCLUSIVES · NEW PERFORMANCE DROP":theme.id==="electronics"?"2-Year Official Warranty & Free Tech Support on All Orders":theme.id==="beauty"?"A considered ritual for skin, hair, and self":theme.id==="grocery"?"Express 2-hour fresh delivery across Dhaka":theme.id==="decor"?"Thoughtful pieces for slower, warmer spaces":theme.id==="furniture"?"Contemporary furniture with complimentary white-glove delivery":"Free shipping over ৳2,000 · Easy 7-day returns";
   return {...defaults(storeSlug),...specific,themeId:theme.id,logo:theme.name.toUpperCase(),primary:c[0],secondary:c[1],background:c[2],text:c[3],heroTitle:theme.hero,heroText:theme.accent,announcementText:baseAnnouncement,font:["fashion","beauty","decor"].includes(theme.id)?"Editorial":"Modern"}
 }

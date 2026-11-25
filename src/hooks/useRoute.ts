@@ -16,7 +16,7 @@ export function useRoute(): RouteHook {
 
   const go = useCallback((next: string) => {
     window.history.pushState({}, "", next)
-    setPath(next)
+    setPath(window.location.pathname)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [])
 

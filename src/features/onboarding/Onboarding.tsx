@@ -1,10 +1,14 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Icon } from "../../components/ui/Icon"
 import {
   themeDefinitions,
   themeDefaults,
   saveStoreThemeConfig,
 } from "../../repositories/themeStore"
+import { getStoreSettings, saveStoreSettings } from "../../repositories/settingsStore"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
+import { ApiError, isBackendEnabled, setActiveStoreId, setActiveStoreSlug } from "../../services/apiClient"
 
 function Logo() {
   return (
@@ -22,6 +26,8 @@ function Field({
   placeholder,
   inputMode,
   large,
+  value,
+  onChange,
 }: {
   label: string
   name: string
@@ -29,11 +35,20 @@ function Field({
   placeholder: string
   inputMode?: "numeric"
   large?: boolean
+  value?: string
+  onChange?: (val: string) => void
 }) {
   return (
     <label className={`field ${large ? "code-field" : ""}`}>
       <span>{label}</span>
-      <input name={name} type={type} inputMode={inputMode} placeholder={placeholder} />
+      <input
+        name={name}
+        type={type}
+        inputMode={inputMode}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      />
     </label>
   )
 }
@@ -62,20 +77,110 @@ export function Onboarding({ path, go }: { path: string; go: (path: string) => v
     return themeDefinitions[0]
   })()
 
-  const [subdomain, setSubdomain] = useState(initialTheme.slug || "trendora")
+  const [businessName, setBusinessName] = useState("")
+  const [businessCategory, setBusinessCategory] = useState("fashion")
+  const [ownerName, setOwnerName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [description, setDescription] = useState("")
+  const [storeName, setStoreName] = useState("")
+  const [subdomain, setSubdomain] = useState(
+    initialTheme.slug && initialTheme.slug !== "demo" ? initialTheme.slug : "my-store"
+  )
   const [theme, setTheme] = useState(initialTheme.id)
   const [brand, setBrand] = useState("#4b4bc7")
-  const next = () => {
+  const [logoImage, setLogoImage] = useState("")
+  const [tagline, setTagline] = useState("")
+  const [remoteUnavailableReason, setRemoteUnavailableReason] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
+
+  const invalidSubdomain = subdomain.length < 3 || !/^[a-z0-9-]+$/.test(subdomain)
+  const reservedSubdomain = ["shop", "admin", "store"].includes(subdomain)
+
+  useEffect(() => {
+    if (!isBackendEnabled() || invalidSubdomain || reservedSubdomain) {
+      setRemoteUnavailableReason("")
+      return
+    }
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void shopnestApi.stores
+        .checkSubdomain(subdomain)
+        .then((res) => {
+          if (!cancelled) {
+            setRemoteUnavailableReason(res.available ? "" : res.reason || "This address is already taken.")
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteUnavailableReason("")
+        })
+    }, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [subdomain, invalidSubdomain, reservedSubdomain])
+
+  const resolvedStoreName = storeName.trim() || businessName.trim() || "Trendora Fashion"
+
+  const next = async () => {
     if (index === onboardingSteps.length - 1) {
+      setSubmitError("")
+      if (canCallProtectedApi()) {
+        setSubmitting(true)
+        try {
+          const created = (await shopnestApi.stores.completeOnboarding({
+            storeName: resolvedStoreName,
+            subdomain,
+            businessName: businessName.trim() || undefined,
+            businessCategory,
+            phone: phone.trim() || undefined,
+            tagline: tagline.trim() || description.trim() || undefined,
+            themeId: theme,
+            brandColor: brand,
+            logoImage: logoImage || undefined,
+          })) as { id?: string; slug?: string } | null
+          if (created?.id) setActiveStoreId(created.id)
+          setActiveStoreSlug(created?.slug || subdomain)
+        } catch (err) {
+          setSubmitting(false)
+          if (err instanceof ApiError) {
+            setSubmitError(err.message)
+          } else {
+            setSubmitError("Could not provision store on backend. Please try another subdomain.")
+          }
+          return
+        } finally {
+          setSubmitting(false)
+        }
+      } else {
+        setActiveStoreSlug(subdomain)
+      }
+
       try {
+        const baseConfig = themeDefaults(theme, "demo")
         const nextConfig = {
-          ...themeDefaults(theme, "demo"),
+          ...baseConfig,
           primary: brand,
+          logo: resolvedStoreName.toUpperCase(),
+          logoImage: logoImage || baseConfig.logoImage || "",
           status: "Published" as const,
         }
         saveStoreThemeConfig(nextConfig)
+        if (subdomain && subdomain !== "demo") {
+          saveStoreThemeConfig({ ...nextConfig, storeSlug: subdomain })
+        }
+        const currentSettings = getStoreSettings()
+        saveStoreSettings({
+          ...currentSettings,
+          storeName: resolvedStoreName,
+          legalBusinessName: businessName.trim() || currentSettings.legalBusinessName,
+          phone: phone.trim() || currentSettings.phone,
+          tagline: tagline.trim() || description.trim() || currentSettings.tagline,
+        })
         localStorage.removeItem("shopnest_pending_theme")
       } catch {}
+
       go("/seller/overview")
     } else {
       go(`/onboarding/${onboardingSteps[index + 1].key}`)
@@ -83,8 +188,7 @@ export function Onboarding({ path, go }: { path: string; go: (path: string) => v
   }
   const back = () =>
     index > 0 ? go(`/onboarding/${onboardingSteps[index - 1].key}`) : go("/signup")
-  const invalidSubdomain = subdomain.length < 3 || !/^[a-z0-9-]+$/.test(subdomain)
-  const unavailable = ["shop", "admin", "store"].includes(subdomain)
+  const unavailable = reservedSubdomain || Boolean(remoteUnavailableReason)
 
   return (
     <div className="onboarding-shell">
@@ -103,9 +207,24 @@ export function Onboarding({ path, go }: { path: string; go: (path: string) => v
       </div>
       <main className="onboarding-main">
         {current === "welcome" && <OnboardingIntro />}
-        {current === "business" && <OnboardingBusiness />}
+        {current === "business" && (
+          <OnboardingBusiness
+            businessName={businessName}
+            setBusinessName={setBusinessName}
+            businessCategory={businessCategory}
+            setBusinessCategory={setBusinessCategory}
+            ownerName={ownerName}
+            setOwnerName={setOwnerName}
+            phone={phone}
+            setPhone={setPhone}
+            description={description}
+            setDescription={setDescription}
+          />
+        )}
         {current === "store" && (
           <OnboardingStore
+            storeName={storeName}
+            setStoreName={setStoreName}
             subdomain={subdomain}
             setSubdomain={setSubdomain}
             invalid={invalidSubdomain}
@@ -113,25 +232,44 @@ export function Onboarding({ path, go }: { path: string; go: (path: string) => v
           />
         )}
         {current === "theme" && <OnboardingTheme theme={theme} setTheme={setTheme} go={go} />}
-        {current === "branding" && <OnboardingBrand brand={brand} setBrand={setBrand} />}
+        {current === "branding" && (
+          <OnboardingBrand
+            brand={brand}
+            setBrand={setBrand}
+            logoImage={logoImage}
+            setLogoImage={setLogoImage}
+            tagline={tagline}
+            setTagline={setTagline}
+          />
+        )}
         {current === "complete" && (
           <OnboardingComplete
+            storeName={resolvedStoreName}
             subdomain={subdomain}
             theme={theme}
             brand={brand}
             go={go}
           />
         )}
+        {submitError && (
+          <div className="form-error" role="alert" style={{ marginTop: "12px" }}>
+            {submitError}
+          </div>
+        )}
         <div className="onboarding-actions">
-          <button className="secondary" onClick={back}>
+          <button className="secondary" onClick={back} disabled={submitting}>
             Back
           </button>
           <button
             className="primary"
-            disabled={current === "store" && (invalidSubdomain || unavailable)}
-            onClick={next}
+            disabled={submitting || (current === "store" && (invalidSubdomain || unavailable))}
+            onClick={() => void next()}
           >
-            {current === "complete" ? "Enter seller dashboard" : "Continue"}{" "}
+            {submitting
+              ? "Creating your store..."
+              : current === "complete"
+              ? "Enter seller dashboard"
+              : "Continue"}{" "}
             <Icon name="arrow" />
           </button>
         </div>
@@ -166,28 +304,50 @@ function OnboardingIntro() {
   )
 }
 
-function OnboardingBusiness() {
+function OnboardingBusiness({
+  businessName,
+  setBusinessName,
+  businessCategory,
+  setBusinessCategory,
+  ownerName,
+  setOwnerName,
+  phone,
+  setPhone,
+  description,
+  setDescription,
+}: {
+  businessName: string
+  setBusinessName: (v: string) => void
+  businessCategory: string
+  setBusinessCategory: (v: string) => void
+  ownerName: string
+  setOwnerName: (v: string) => void
+  phone: string
+  setPhone: (v: string) => void
+  description: string
+  setDescription: (v: string) => void
+}) {
   return (
     <section className="onboarding-panel">
       <span className="eyebrow">STEP 2 OF 6</span>
       <h1>Tell us about your business</h1>
       <p>This helps us tailor your setup experience.</p>
       <div className="form-grid">
-        <Field label="Business name" name="business" placeholder="Trendora Fashion" />
+        <Field label="Business name" name="business" placeholder="Trendora Fashion" value={businessName} onChange={setBusinessName} />
         <label className="field">
           <span>Business category</span>
-          <select defaultValue="fashion">
+          <select value={businessCategory} onChange={(e) => setBusinessCategory(e.target.value)}>
             <option value="fashion">Fashion & clothing</option>
-            <option>Electronics</option>
-            <option>Beauty & cosmetics</option>
-            <option>Home & lifestyle</option>
+            <option value="electronics">Electronics</option>
+            <option value="beauty">Beauty & cosmetics</option>
+            <option value="decor">Home & lifestyle</option>
           </select>
         </label>
-        <Field label="Owner name" name="owner" placeholder="Saif Rahman" />
-        <Field label="Contact number" name="phone" placeholder="+880 1XXX-XXXXXX" />
+        <Field label="Owner name" name="owner" placeholder="Saif Rahman" value={ownerName} onChange={setOwnerName} />
+        <Field label="Contact number" name="phone" placeholder="+880 1XXX-XXXXXX" value={phone} onChange={setPhone} />
         <label className="field full">
           <span>Business description <em>Optional</em></span>
-          <textarea placeholder="Tell customers what makes your business special." />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell customers what makes your business special." />
         </label>
       </div>
     </section>
@@ -195,11 +355,15 @@ function OnboardingBusiness() {
 }
 
 function OnboardingStore({
+  storeName,
+  setStoreName,
   subdomain,
   setSubdomain,
   invalid,
   unavailable,
 }: {
+  storeName: string
+  setStoreName: (v: string) => void
   subdomain: string
   setSubdomain: (v: string) => void
   invalid: boolean
@@ -211,7 +375,7 @@ function OnboardingStore({
       <span className="eyebrow">STEP 3 OF 6</span>
       <h1>Create your store</h1>
       <p>Choose a recognizable name and your free ShopNest address.</p>
-      <Field label="Store name" name="store" placeholder="Trendora Fashion" />
+      <Field label="Store name" name="store" placeholder="Trendora Fashion" value={storeName} onChange={setStoreName} />
       <label className="field">
         <span>Store address</span>
         <div className={`domain-input ${available ? "valid" : "invalid"}`}>
@@ -226,7 +390,7 @@ function OnboardingStore({
             ? "Use at least 3 lowercase letters, numbers, or hyphens."
             : unavailable
             ? "This address is reserved. Try another name."
-            : `trendora.shopnest.app is available.`}
+            : `${subdomain}.shopnest.app is available.`}
         </small>
       </label>
       <div className="url-preview">
@@ -364,20 +528,37 @@ function OnboardingTheme({
 function OnboardingBrand({
   brand,
   setBrand,
+  logoImage,
+  setLogoImage,
+  tagline,
+  setTagline,
 }: {
   brand: string
   setBrand: (v: string) => void
+  logoImage: string
+  setLogoImage: (v: string) => void
+  tagline: string
+  setTagline: (v: string) => void
 }) {
   const colors = ["#4b4bc7", "#173b35", "#b85b45", "#2f6eaf", "#8a4774"]
+  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      if (typeof evt.target?.result === "string") setLogoImage(evt.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
   return (
     <section className="onboarding-panel">
       <span className="eyebrow">STEP 5 OF 6</span>
       <h1>Add your brand</h1>
       <p>Make the storefront feel like yours. These settings can be refined later.</p>
       <label className="upload-box">
-        <input type="file" accept="image/*" />
+        <input type="file" accept="image/*" onChange={handleLogo} />
         <div className="upload-icon"><Icon name="plus" /></div>
-        <strong>Upload your logo</strong>
+        <strong>{logoImage ? "Logo selected ✓" : "Upload your logo"}</strong>
         <span>PNG, JPG or SVG · up to 5MB</span>
       </label>
       <label className="field">
@@ -394,17 +575,19 @@ function OnboardingBrand({
           ))}
         </div>
       </label>
-      <Field label="Store tagline" name="tagline" placeholder="Everyday style, thoughtfully made." />
+      <Field label="Store tagline" name="tagline" placeholder="Everyday style, thoughtfully made." value={tagline} onChange={setTagline} />
     </section>
   )
 }
 
 function OnboardingComplete({
+  storeName,
   subdomain,
   theme,
   brand,
   go,
 }: {
+  storeName: string
   subdomain: string
   theme: string
   brand: string
@@ -420,7 +603,7 @@ function OnboardingComplete({
       <div className="review-list">
         <div>
           <span>Business</span>
-          <strong>Trendora Fashion</strong>
+          <strong>{storeName}</strong>
           <button onClick={() => go("/onboarding/business")}>Edit</button>
         </div>
         <div>

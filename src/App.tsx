@@ -1,6 +1,8 @@
-import React, { Suspense, lazy, useEffect, useState } from "react"
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react"
 import { useRoute } from "./hooks/useRoute"
 import { sellerRoutes } from "./constants"
+import { isAdminUser, isUserRegistered, setReturnToPath } from "./utils/auth"
+import { syncSellerWorkspaceFromBackend } from "./services/backendSync"
 import { SellerLayout } from "./app/layouts/SellerLayout"
 import { NotFound } from "./components/shared/NotFound"
 import { ComingSoon } from "./components/shared/ComingSoon"
@@ -35,6 +37,7 @@ function RouteLoader() {
 export default function App() {
   const { path, go } = useRoute()
   const [toast, setToast] = useState("")
+  const toastTimerRef = useRef<number | null>(null)
 
   const active =
     Object.entries(sellerRoutes)
@@ -48,9 +51,23 @@ export default function App() {
     document.title = label
   }, [path, title])
 
+  useEffect(() => {
+    void syncSellerWorkspaceFromBackend()
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current)
+    }
+  }, [])
+
   const notify = (message: string) => {
     setToast(message)
-    window.setTimeout(() => setToast(""), 2400)
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast("")
+      toastTimerRef.current = null
+    }, 2400)
   }
 
   // Public Landing Page
@@ -61,9 +78,12 @@ export default function App() {
   // Public Themes Gallery
   if (path === "/themes") {
     return (
-      <Suspense fallback={<RouteLoader />}>
-        <PublicThemesPage go={go} notify={notify} />
-      </Suspense>
+      <>
+        <Suspense fallback={<RouteLoader />}>
+          <PublicThemesPage go={go} notify={notify} />
+        </Suspense>
+        {toast && <div className="toast">{toast}</div>}
+      </>
     )
   }
 
@@ -77,8 +97,28 @@ export default function App() {
     return <Onboarding path={path} go={go} />
   }
 
-  // Super Admin Platform
+  // Super Admin Platform (Protected: Admin role required)
   if (path.startsWith("/admin")) {
+    if (!isUserRegistered()) {
+      setReturnToPath(path)
+      return <AuthPage path="/login" go={go} />
+    }
+    if (!isAdminUser()) {
+      return (
+        <div className="store-unavailable">
+          <strong>ShopNest</strong>
+          <div>
+            <span>403</span>
+            <h1>Admin access required.</h1>
+            <p>You are signed in as a seller. Switch to a Super Admin account to access platform administration.</p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginTop: "16px" }}>
+              <button onClick={() => go("/seller/overview")}>Go to Seller Dashboard</button>
+              <button onClick={() => { setReturnToPath(path); go("/login") }}>Sign in as Admin</button>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <Suspense fallback={<RouteLoader />}>
         <AdminAppModule path={path} go={go} />
@@ -100,7 +140,11 @@ export default function App() {
     return <NotFound go={go} />
   }
 
-  // Seller Dashboard Workspaces
+  // Seller Dashboard Workspaces (Protected: Authenticated user required)
+  if (!isUserRegistered()) {
+    setReturnToPath(path)
+    return <AuthPage path="/login" go={go} />
+  }
   return (
     <SellerLayout path={path} go={go} toast={toast} active={active}>
       <Suspense fallback={<RouteLoader />}>

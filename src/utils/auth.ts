@@ -1,8 +1,14 @@
+import { clearAuthTokens } from "../services/apiClient"
+
 const AUTH_KEY = "shopnest_registered_user"
+const RETURN_TO_KEY = "shopnest_return_to"
+
+export type UserRole = "seller" | "admin"
 
 export interface RegisteredUser {
   email?: string
   name?: string
+  role?: UserRole
   registered?: boolean
   registeredAt?: string
 }
@@ -20,12 +26,18 @@ export function isUserRegistered(): boolean {
 
 export function setRegisteredUser(user: RegisteredUser): void {
   try {
+    const existing = getRegisteredUser()
+    const inferredRole: UserRole =
+      user.role ||
+      (user.email?.toLowerCase().includes("admin") ? "admin" : existing?.role || "seller")
     localStorage.setItem(
       AUTH_KEY,
       JSON.stringify({
+        ...existing,
         ...user,
+        role: inferredRole,
         registered: true,
-        registeredAt: user.registeredAt || new Date().toISOString(),
+        registeredAt: user.registeredAt || existing?.registeredAt || new Date().toISOString(),
       })
     )
   } catch {
@@ -42,10 +54,37 @@ export function getRegisteredUser(): RegisteredUser | null {
   }
 }
 
+export function getUserRole(): UserRole {
+  return getRegisteredUser()?.role || "seller"
+}
+
+export function isAdminUser(): boolean {
+  return isUserRegistered() && getUserRole() === "admin"
+}
+
 export function clearRegisteredUser(): void {
   try {
     localStorage.removeItem(AUTH_KEY)
+    clearAuthTokens()
   } catch {
     // ignore
+  }
+}
+
+export function setReturnToPath(path: string): void {
+  try {
+    sessionStorage.setItem(RETURN_TO_KEY, path)
+  } catch {
+    // ignore
+  }
+}
+
+export function consumeReturnToPath(): string | null {
+  try {
+    const target = sessionStorage.getItem(RETURN_TO_KEY)
+    if (target) sessionStorage.removeItem(RETURN_TO_KEY)
+    return target
+  } catch {
+    return null
   }
 }

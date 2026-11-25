@@ -1,7 +1,10 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Icon } from "../../components/ui/Icon"
 import { Badge } from "../../components/ui/Badge"
 import { money } from "../../utils/format"
+import { getCommerceOrders } from "../../repositories/commerceStore"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
 
 export interface AnalyticsPageProps {
   notify: (message: string) => void
@@ -145,9 +148,91 @@ const analyticsByRange: Record<DateRange, RangeData> = {
 
 export default function AnalyticsPage({ notify }: AnalyticsPageProps) {
   const [range, setRange] = useState<DateRange>("30d")
-  const current = analyticsByRange[range]
+  const backendLive = canCallProtectedApi()
+  const [liveCustomers, setLiveCustomers] = useState<{ name: string; city: string; orders: number; totalSpent: number }[]>([])
+  const [apiReport, setApiReport] = useState<{
+    totalRevenue: number
+    totalOrders: number
+    aov: number
+    repeatRate: number
+    newCustomers: number
+    returningCustomers: number
+    topProducts: { name: string; sku: string; units: number; revenue: number; color: string }[]
+  } | null>(null)
+
+  useEffect(() => {
+    if (!canCallProtectedApi()) return
+    void Promise.allSettled([
+      shopnestApi.analytics.reports(range),
+      shopnestApi.customers.list(),
+    ]).then(([reportRes, customersRes]) => {
+      if (reportRes.status === "fulfilled" && reportRes.value && typeof reportRes.value === "object") {
+        const r = reportRes.value as Record<string, unknown>
+        setApiReport({
+          totalRevenue: Number(r.totalRevenue || 0),
+          totalOrders: Number(r.totalOrders || 0),
+          aov: Number(r.aov || 0),
+          repeatRate: Number(r.repeatRate || 0),
+          newCustomers: Number(r.newCustomers || 0),
+          returningCustomers: Number(r.returningCustomers || 0),
+          topProducts: Array.isArray(r.topProducts)
+            ? r.topProducts.map((p: Record<string, unknown>) => ({
+                name: String(p.name || ""),
+                sku: String(p.sku || "—"),
+                units: Number(p.units || 0),
+                revenue: Number(p.revenue || 0),
+                color: "sand",
+              }))
+            : [],
+        })
+      }
+      if (customersRes.status === "fulfilled" && Array.isArray(customersRes.value)) {
+        const list = (customersRes.value as Record<string, unknown>[])
+          .map((c) => ({
+            name: String(c.name || "Customer"),
+            city: String(c.city || "Bangladesh"),
+            orders: Number(c.orders || 0),
+            totalSpent: Number(c.totalSpent || 0),
+          }))
+          .sort((a, b) => b.orders - a.orders || b.totalSpent - a.totalSpent)
+          .slice(0, 3)
+        setLiveCustomers(list)
+      }
+    })
+  }, [range])
+
+  const base = analyticsByRange[range]
+  const liveOrders = getCommerceOrders()
+  const liveRevenue = liveOrders.reduce((sum, o) => sum + o.total, 0)
+  const totalOrders = backendLive ? (apiReport?.totalOrders ?? 0) : base.totalOrders + liveOrders.length
+  const totalRevenue = backendLive ? (apiReport?.totalRevenue ?? 0) : base.totalRevenue + liveRevenue
+  const current: RangeData = {
+    ...base,
+    totalRevenue,
+    totalOrders,
+    aov: backendLive ? (apiReport?.aov ?? 0) : (totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : base.aov),
+    repeatRate: backendLive ? (apiReport?.repeatRate ?? 0) : base.repeatRate,
+    newCustomers: backendLive ? (apiReport?.newCustomers ?? 0) : base.newCustomers,
+    returningCustomers: backendLive ? (apiReport?.returningCustomers ?? 0) : base.returningCustomers,
+    topProducts: backendLive ? (apiReport?.topProducts ?? []) : base.topProducts,
+  }
 
   const handleExport = () => {
+    const rows = [
+      ["Metric", "Value"],
+      ["Date Range", current.label],
+      ["Total Revenue (BDT)", String(current.totalRevenue)],
+      ["Total Orders", String(current.totalOrders)],
+      ["Average Order Value (BDT)", String(current.aov)],
+      ["Repeat Customer Rate (%)", String(current.repeatRate)],
+    ]
+    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(",")).join("\n")
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `shopnest-analytics-${range}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
     notify(`Analytics summary for ${current.label} exported (CSV)`)
   }
 
@@ -158,7 +243,7 @@ export default function AnalyticsPage({ notify }: AnalyticsPageProps) {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2>Analytics & Reports</h2>
-            <Badge tone="active">Mock Demo Data</Badge>
+            <Badge tone="active">{backendLive ? "Live Data" : "Mock Demo Data"}</Badge>
           </div>
           <p>Track store revenue, order volume, category performance, and customer retention metrics.</p>
         </div>
@@ -366,38 +451,69 @@ export default function AnalyticsPage({ notify }: AnalyticsPageProps) {
 
           <h4 style={{ margin: "0 0 10px", fontSize: "12px", color: "#344054" }}>Top Repeat Customers</h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f2f4f7", fontSize: "11px" }}>
-              <div>
-                <strong style={{ color: "#344054" }}>Nusrat Jahan</strong>
-                <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>Dhanmondi, Dhaka</span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <strong>{money(24850)}</strong>
-                <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>8 orders</span>
-              </div>
-            </div>
+            {backendLive ? (
+              liveCustomers.length > 0 ? (
+                liveCustomers.map((c, idx) => (
+                  <div
+                    key={`${c.name}-${idx}`}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "6px 0",
+                      borderBottom: idx < liveCustomers.length - 1 ? "1px solid #f2f4f7" : "none",
+                      fontSize: "11px",
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: "#344054" }}>{c.name}</strong>
+                      <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>{c.city}</span>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <strong>{money(c.totalSpent)}</strong>
+                      <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>{c.orders} orders</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p style={{ margin: 0, color: "#98a2b3", fontSize: "12px" }}>No customer orders recorded yet.</p>
+              )
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f2f4f7", fontSize: "11px" }}>
+                  <div>
+                    <strong style={{ color: "#344054" }}>Nusrat Jahan</strong>
+                    <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>Dhanmondi, Dhaka</span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <strong>{money(24850)}</strong>
+                    <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>8 orders</span>
+                  </div>
+                </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f2f4f7", fontSize: "11px" }}>
-              <div>
-                <strong style={{ color: "#344054" }}>Samira Akter</strong>
-                <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>Agrabad, Chattogram</span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <strong>{money(38690)}</strong>
-                <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>11 orders</span>
-              </div>
-            </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f2f4f7", fontSize: "11px" }}>
+                  <div>
+                    <strong style={{ color: "#344054" }}>Samira Akter</strong>
+                    <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>Agrabad, Chattogram</span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <strong>{money(38690)}</strong>
+                    <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>11 orders</span>
+                  </div>
+                </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", fontSize: "11px" }}>
-              <div>
-                <strong style={{ color: "#344054" }}>Arif Hasan</strong>
-                <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>Uttara, Dhaka</span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <strong>{money(11200)}</strong>
-                <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>4 orders</span>
-              </div>
-            </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", fontSize: "11px" }}>
+                  <div>
+                    <strong style={{ color: "#344054" }}>Arif Hasan</strong>
+                    <span style={{ display: "block", color: "#98a2b3", fontSize: "9px" }}>Uttara, Dhaka</span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <strong>{money(11200)}</strong>
+                    <span style={{ display: "block", color: "#16845a", fontSize: "9px" }}>4 orders</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -430,42 +546,48 @@ export default function AnalyticsPage({ notify }: AnalyticsPageProps) {
             <span style={{ textAlign: "right" }}>Total Revenue</span>
           </div>
 
-          {current.topProducts.map((prod) => (
-            <div
-              className="mg-row"
-              key={prod.sku}
-              style={{
-                gridTemplateColumns: "1.6fr 1fr 1fr 1.2fr",
-                display: "grid",
-                padding: "12px 16px",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span
-                  style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "6px",
-                    background: "var(--color-brand-50)",
-                    color: "var(--color-brand-600)",
-                    display: "grid",
-                    placeItems: "center",
-                    fontWeight: 700,
-                    fontSize: "10px",
-                  }}
-                >
-                  {prod.name.slice(0, 2).toUpperCase()}
-                </span>
-                <strong style={{ color: "#344054", fontSize: "12px" }}>{prod.name}</strong>
-              </div>
-              <span style={{ color: "#8490a2", fontSize: "11px" }}>{prod.sku}</span>
-              <span style={{ fontWeight: 600, color: "#344054" }}>{prod.units} units</span>
-              <strong style={{ textAlign: "right", color: "#16845a", fontSize: "13px" }}>
-                {money(prod.revenue)}
-              </strong>
+          {current.topProducts.length === 0 ? (
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "#98a2b3", fontSize: "12px" }}>
+              No product sales recorded for this period yet.
             </div>
-          ))}
+          ) : (
+            current.topProducts.map((prod) => (
+              <div
+                className="mg-row"
+                key={prod.sku}
+                style={{
+                  gridTemplateColumns: "1.6fr 1fr 1fr 1.2fr",
+                  display: "grid",
+                  padding: "12px 16px",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "6px",
+                      background: "var(--color-brand-50)",
+                      color: "var(--color-brand-600)",
+                      display: "grid",
+                      placeItems: "center",
+                      fontWeight: 700,
+                      fontSize: "10px",
+                    }}
+                  >
+                    {prod.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <strong style={{ color: "#344054", fontSize: "12px" }}>{prod.name}</strong>
+                </div>
+                <span style={{ color: "#8490a2", fontSize: "11px" }}>{prod.sku}</span>
+                <span style={{ fontWeight: 600, color: "#344054" }}>{prod.units} units</span>
+                <strong style={{ textAlign: "right", color: "#16845a", fontSize: "13px" }}>
+                  {money(prod.revenue)}
+                </strong>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,11 @@
-import React from "react"
+import React, { useState } from "react"
 import { Icon } from "../../components/ui/Icon"
 import { Status } from "../../components/ui/Status"
+import { getStoreThemeConfig, saveStoreThemeConfig, themeDefinitions } from "../../repositories/themeStore"
+import { getStoreSettings } from "../../repositories/settingsStore"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
+import { getActiveStoreSlug } from "../../services/apiClient"
 
 export function StorefrontPage({
   onAction,
@@ -9,6 +14,25 @@ export function StorefrontPage({
   onAction: (m: string) => void
   go: (p: string) => void
 }) {
+  const activeSlug = getActiveStoreSlug()
+  const [config, setConfig] = useState(() => getStoreThemeConfig(activeSlug))
+  const settings = getStoreSettings()
+  const activeTheme = themeDefinitions.find((t) => t.id === config.themeId) || themeDefinitions[0]
+  const storeSlug = activeSlug === "demo" ? "trendora" : activeSlug
+
+  const handlePublish = () => {
+    const next = { ...config, storeSlug: activeSlug, status: "Published" as const }
+    saveStoreThemeConfig(next)
+    if (activeSlug !== "demo") {
+      saveStoreThemeConfig({ ...next, storeSlug: "demo" })
+    }
+    setConfig(next)
+    if (canCallProtectedApi()) {
+      void shopnestApi.themes.publish().catch(() => undefined)
+    }
+    onAction(`${activeTheme.title} published to your storefront`)
+  }
+
   return (
     <div className="content">
       <div className="section-title">
@@ -16,13 +40,7 @@ export function StorefrontPage({
           <h2>Storefront</h2>
           <p>Your live storefront, theme, and publishing controls.</p>
         </div>
-        <button
-          className="primary"
-          onClick={() => {
-            localStorage.setItem("shopnest-store-published", new Date().toISOString())
-            onAction("Storefront publish state updated locally")
-          }}
-        >
+        <button className="primary" onClick={handlePublish}>
           <Icon name="check" />Publish changes
         </button>
       </div>
@@ -30,11 +48,15 @@ export function StorefrontPage({
       <section className="storefront-layout">
         <div className="card theme-info">
           <div className="theme-kicker">Current theme</div>
-          <h3>Store theme</h3>
-          <p>Manage the selected theme and local storefront presentation.</p>
+          <h3>{activeTheme.title}</h3>
+          <p>{activeTheme.description}</p>
           <div className="theme-meta">
-            <span><Status tone="green">Published</Status></span>
-            <span>Local prototype state</span>
+            <span>
+              <Status tone={settings.maintenanceMode ? "amber" : config.status === "Published" ? "green" : "gray"}>
+                {settings.maintenanceMode ? "Maintenance" : config.status}
+              </Status>
+            </span>
+            <span>{activeTheme.label}</span>
           </div>
           <button className="primary wide" onClick={() => go("/seller/customizer")}>
             <Icon name="palette" />Customize theme
@@ -45,11 +67,11 @@ export function StorefrontPage({
           <hr />
           <h4>Store address</h4>
           <div className="domain">
-            <span>trendora.shopnest.app</span>
+            <span>{storeSlug}.shopnest.app</span>
             <button
               aria-label="Copy store URL"
               onClick={() => {
-                navigator.clipboard?.writeText("https://trendora.shopnest.app")
+                navigator.clipboard?.writeText(`https://${storeSlug}.shopnest.app`)
                 onAction("Store URL copied")
               }}
             >
@@ -61,24 +83,24 @@ export function StorefrontPage({
         <div className="browser card">
           <div className="browser-bar">
             <i /><i /><i />
-            <span>trendora.shopnest.app</span>
+            <span>{storeSlug}.shopnest.app</span>
           </div>
           <div className="shop-preview">
             <div className="shop-nav">
-              <strong>TRENDORA</strong>
-              <span>New in　 Shop　 Collections　 Our story</span>
+              <strong>{config.logo || settings.storeName.toUpperCase()}</strong>
+              <span>{activeTheme.categories.join("　 ")}</span>
               <div>Search　 Bag</div>
             </div>
             <div className="shop-hero">
               <img
-                src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1400&q=85"
-                alt="Trendora boutique clothing collection"
+                src={activeTheme.heroImage}
+                alt={`${settings.storeName} storefront preview`}
               />
               <div>
-                <small>THE SUMMER EDIT</small>
-                <h3>Ease, in every thread.</h3>
-                <p>Considered essentials for sunlit days and slow evenings.</p>
-                <button onClick={() => go("/store/demo")}>Explore the collection</button>
+                <small>{activeTheme.label.toUpperCase()}</small>
+                <h3>{config.heroTitle || activeTheme.hero}</h3>
+                <p>{config.heroText || activeTheme.accent}</p>
+                <button onClick={() => go(`/store/${activeSlug}`)}>Explore the collection</button>
               </div>
             </div>
           </div>

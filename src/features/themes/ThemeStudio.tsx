@@ -2,6 +2,9 @@ import { useState } from "react"
 import { getStoreThemeConfig, saveStoreThemeConfig, StoreThemeConfig, themeDefaults, themeDefinitions } from "../../repositories/themeStore"
 import { isUserRegistered } from "../../utils/auth"
 import { LiveStorefrontView } from "../storefront/CustomerStorefront"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
+import { getActiveStoreSlug } from "../../services/apiClient"
 
 const previewThemedProducts: Record<string, Array<{ name: string; price: number; tag: string }>> = {
   shoes: [
@@ -56,22 +59,30 @@ const previewThemedProducts: Record<string, Array<{ name: string; price: number;
 
 export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=>void;notify:(m:string)=>void}){
   const customizer=path.startsWith("/seller/customizer")
-  const [config,setConfig]=useState<StoreThemeConfig>(()=>getStoreThemeConfig("demo"))
+  const activeSlug=getActiveStoreSlug()
+  const [config,setConfig]=useState<StoreThemeConfig>(()=>getStoreThemeConfig(activeSlug))
   const [saved,setSaved]=useState(config)
   const [device,setDevice]=useState<"desktop"|"tablet"|"mobile">("desktop")
   const [reset,setReset]=useState(false)
   const theme=themeDefinitions.find(item=>item.id===config.themeId)||themeDefinitions[0]
+  const persistTheme=(cfg:StoreThemeConfig)=>{
+    saveStoreThemeConfig({...cfg,storeSlug:activeSlug})
+    if(activeSlug!=="demo") saveStoreThemeConfig({...cfg,storeSlug:"demo"})
+  }
   const apply=(id:string)=>{
     if (!isUserRegistered()) {
       try { localStorage.setItem("shopnest_pending_theme", id) } catch {}
       go("/signup")
       return
     }
-    const next=themeDefaults(id,"demo");
+    const next=themeDefaults(id,activeSlug);
     setConfig(next);
-    saveStoreThemeConfig(next);
+    persistTheme(next);
     setSaved(next);
-    notify(`${themeDefinitions.find(t=>t.id===id)?.title} applied to Trendora Fashion`)
+    if (canCallProtectedApi()) {
+      void shopnestApi.themes.switchTheme(id).catch(() => undefined)
+    }
+    notify(`${themeDefinitions.find(t=>t.id===id)?.title} applied`)
   }
   if(!customizer)return <div className="content theme-gallery-page"><div className="section-title"><div><h2>Theme gallery</h2><p>Choose a storefront foundation. Products, orders, and settings stay unchanged.</p></div><button className="secondary" onClick={()=>go("/seller/customizer")}>Open customizer</button></div><div className="theme-gallery-grid">{themeDefinitions.map(item=><ThemeCard key={item.id} item={item} active={config.themeId===item.id} preview={()=>{try{localStorage.setItem("shopnest_preview_return","/seller/themes")}catch{}go(`/store/${item.slug}/preview`)}} apply={()=>apply(item.id)}/>)}</div></div>
   const update=<K extends keyof StoreThemeConfig>(key:K,value:StoreThemeConfig[K])=>setConfig(current=>({...current,[key]:value}))
@@ -118,10 +129,10 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
         {(["desktop","tablet","mobile"] as const).map(d=><button className={device===d?"active":""} onClick={()=>setDevice(d)} key={d}>{d}</button>)}
       </div>
       <div>
-        <button className="secondary" title="View live storefront" onClick={()=>go("/store/demo")}>View store ↗</button>
+        <button className="secondary" title="View live storefront" onClick={()=>go(`/store/${activeSlug}`)}>View store ↗</button>
         <button className="secondary" onClick={()=>setReset(true)}>Reset</button>
-        <button className="secondary" onClick={()=>{saveStoreThemeConfig({...config,status:"Draft"});setSaved({...config,status:"Draft"});notify("Theme draft saved locally")}}>Save draft</button>
-        <button className="primary" onClick={()=>{const next={...config,status:"Published" as const};saveStoreThemeConfig(next);setSaved(next);notify("Theme published to the demo storefront")}}>Publish</button>
+        <button className="secondary" onClick={()=>{const next={...config,status:"Draft" as const};persistTheme(next);setSaved(next);if(canCallProtectedApi()){void shopnestApi.themes.updateConfig({status:"DRAFT",config:next}).catch(()=>undefined)}notify("Theme draft saved")}}>Save draft</button>
+        <button className="primary" onClick={()=>{const next={...config,status:"Published" as const};persistTheme(next);setSaved(next);if(canCallProtectedApi()){void shopnestApi.themes.updateConfig({status:"PUBLISHED",config:next}).catch(()=>undefined)}notify("Theme published to your storefront")}}>Publish</button>
       </div>
     </header>
     <div className="customizer-body">
@@ -379,7 +390,7 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
         <p>Your unpublished customizations will be replaced by this theme’s defaults.</p>
         <div className="modal-actions">
           <button className="secondary" onClick={()=>setReset(false)}>Cancel</button>
-          <button className="danger-button" onClick={()=>{setConfig(themeDefaults(config.themeId,"demo"));setReset(false)}}>Reset settings</button>
+          <button className="danger-button" onClick={()=>{setConfig(themeDefaults(config.themeId,"demo",true));setReset(false);if(canCallProtectedApi()){void shopnestApi.themes.reset().catch(()=>undefined)}notify("Theme settings reset to factory defaults")}}>Reset settings</button>
         </div>
       </div>
     </div>}

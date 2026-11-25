@@ -11,6 +11,8 @@ import {
   getShippingSettings,
   saveShippingSettings,
 } from "../../repositories/shippingStore"
+import { canCallProtectedApi } from "../../services/backendSync"
+import { shopnestApi } from "../../services/shopnestApi"
 
 export interface ShippingPageProps {
   notify: (message: string) => void
@@ -48,6 +50,23 @@ export default function ShippingPage({ notify }: ShippingPageProps) {
     }
 
     saveShippingSettings(settings)
+    if (canCallProtectedApi()) {
+      void shopnestApi.shipping
+        .update({
+          insideDhakaRate: settings.insideDhakaRate,
+          subDhakaRate: settings.subDhakaRate,
+          outsideDhakaRate: settings.outsideDhakaRate,
+          freeShippingEnabled: settings.freeShippingEnabled,
+          freeShippingThreshold: settings.freeShippingThreshold,
+          expressDeliveryEnabled: settings.expressDeliveryEnabled,
+          expressDeliveryRate: settings.expressDeliveryRate,
+          pickupEnabled: settings.pickupEnabled,
+          pickupAddress: settings.pickupAddress,
+          defaultCourier: settings.defaultCourier,
+          specialNotes: settings.specialNotes,
+        })
+        .catch(() => undefined)
+    }
     setIsDirty(false)
     notify("Shipping and delivery settings saved successfully.")
   }
@@ -57,6 +76,9 @@ export default function ShippingPage({ notify }: ShippingPageProps) {
     if (window.confirm("Reset all shipping configurations to default presets?")) {
       setSettings(defaultShippingSettings)
       saveShippingSettings(defaultShippingSettings)
+      if (canCallProtectedApi()) {
+        void shopnestApi.shipping.reset().catch(() => undefined)
+      }
       setIsDirty(false)
       notify("Shipping settings reset to defaults.")
     }

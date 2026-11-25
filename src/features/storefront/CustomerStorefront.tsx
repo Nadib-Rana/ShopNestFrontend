@@ -1,7 +1,11 @@
-import { FormEvent, useMemo, useState } from "react"
-import { CommerceOrder, CommerceProduct, getCommerceOrders, getCommerceProducts, saveCommerceOrder } from "../../repositories/commerceStore"
-import { getStoreThemeConfig, themeDefinitions } from "../../repositories/themeStore"
+import { FormEvent, useEffect, useState } from "react"
+import { CommerceOrder, CommerceProduct, getCommerceOrders, getCommerceProducts, saveCommerceOrder, saveCommerceProducts } from "../../repositories/commerceStore"
+import { getStoreThemeConfig, hasSavedStoreThemeConfig, themeDefinitions } from "../../repositories/themeStore"
+import { getShippingSettings } from "../../repositories/shippingStore"
+import { getStoreSettings } from "../../repositories/settingsStore"
 import { isUserRegistered } from "../../utils/auth"
+import { isBackendEnabled } from "../../services/apiClient"
+import { shopnestApi } from "../../services/shopnestApi"
 
 type Product=CommerceProduct
 type CartItem={product:Product;quantity:number;variant:string}
@@ -63,23 +67,45 @@ import { money } from "../../utils/format"
 export default function CustomerStorefront({path,go}:{path:string;go:(p:string)=>void}){
   const parts=path.split("/").filter(Boolean),slug=parts[1]||"demo",section=parts[2]||"home",detail=parts[3]
   const config=getStoreThemeConfig(slug)
+  const hasSavedConfig=hasSavedStoreThemeConfig(slug)
   const routeTheme=themeDefinitions.find(t=>t.slug===slug)
-  const customized=slug==="demo"&&section!=="preview"
+  const customized=(slug==="demo"||hasSavedConfig)&&section!=="preview"
   const theme=customized?(themeDefinitions.find(t=>t.id===config.themeId)||themeDefinitions[0]):routeTheme
+  const storeSettings=getStoreSettings()
+  const shippingSettings=getShippingSettings()
   const [cart,setCart]=useState<CartItem[]>(getCart)
-  const products=(slug==="demo"&&theme?.id==="fashion"?getCommerceProducts():productsForTheme(theme?.id||"fashion")).filter(product=>product.status==="Active")
+  const hasCustomCatalog=typeof window!=="undefined"&&localStorage.getItem("shopnest-commerce-products")!==null
+  const products=(customized&&(theme?.id==="fashion"||hasCustomCatalog)?getCommerceProducts():productsForTheme(theme?.id||"fashion")).filter(product=>product.status==="Active")
   const [query,setQuery]=useState("")
   const [lastOrder,setLastOrder]=useState<CommerceOrder|null>(()=>getCommerceOrders()[0]||null)
   if(!theme)return <div className="store-unavailable"><strong>ShopNest</strong><div><span>404</span><h1>This store isn’t available.</h1><p>Check the store address or contact the business owner.</p><button onClick={()=>go("/")}>Return to ShopNest</button></div></div>
+  if(customized&&storeSettings.maintenanceMode){
+    return <div className="store-unavailable"><strong>{storeSettings.storeName||config.logo}</strong><div><span>MAINTENANCE</span><h1>We’ll be right back.</h1><p>{storeSettings.maintenanceMessage}</p><button onClick={()=>go("/")}>Return to ShopNest</button></div></div>
+  }
   const saveCart=(next:CartItem[])=>{setCart(next);localStorage.setItem(cartKey,JSON.stringify(next))}
-  const add=(product:Product,variant:string,quantity=1)=>{const found=cart.find(i=>i.product.id===product.id&&i.variant===variant);saveCart(found?cart.map(i=>i===found?{...i,quantity:Math.min(product.stock,i.quantity+quantity)}:i):[...cart,{product,variant,quantity}])}
+  const add=(product:Product,variant:string,quantity=1)=>{
+    if(product.stock<=0)return
+    const found=cart.find(i=>i.product.id===product.id&&i.variant===variant)
+    saveCart(found?cart.map(i=>i===found?{...i,quantity:Math.min(product.stock,i.quantity+quantity)}:i):[...cart,{product,variant,quantity:Math.min(product.stock,Math.max(1,quantity))}])
+  }
+  const handleOrderPlaced=(order:CommerceOrder)=>{
+    saveCommerceOrder(order)
+    const storedProducts=getCommerceProducts()
+    const updatedProducts=storedProducts.map(prod=>{
+      const orderedQty=order.items.filter(item=>item.id===prod.id).reduce((sum,item)=>sum+item.quantity,0)
+      return orderedQty>0?{...prod,stock:Math.max(0,prod.stock-orderedQty)}:prod
+    })
+    saveCommerceProducts(updatedProducts)
+    setLastOrder(order)
+    saveCart([])
+  }
   const count=cart.reduce((a,i)=>a+i.quantity,0)
-  const layout={theme,slug,cartCount:count,query,setQuery,go,logo:slug==="demo"?config.logo:theme.name,logoImage:slug==="demo"?config.logoImage:"",announcementText:slug==="demo"?config.announcementText:undefined,headerLayout:slug==="demo"?config.header:"Centered",config}
+  const layout={theme,slug,cartCount:count,query,setQuery,go,logo:customized?config.logo:theme.name,logoImage:customized?config.logoImage:"",announcementText:customized?config.announcementText:undefined,headerLayout:customized?config.header:"Centered",config}
   let page:React.ReactNode
   if(section==="products"&&detail)page=<ProductDetail product={products.find(p=>p.id===Number(detail))||products[0]} add={add} go={go} slug={slug}/>
   else if(section==="products"||section==="search"||section==="categories")page=<Catalog products={products} query={section==="search"?query:""} go={go} slug={slug} category={detail}/>
-  else if(section==="cart")page=<Cart cart={cart} save={saveCart} go={go} slug={slug}/>
-  else if(section==="checkout")page=<Checkout cart={cart} slug={slug} go={go} onOrder={order=>{saveCommerceOrder(order);setLastOrder(order);saveCart([])}}/>
+  else if(section==="cart")page=<Cart cart={cart} save={saveCart} go={go} slug={slug} shippingSettings={shippingSettings}/>
+  else if(section==="checkout")page=<Checkout cart={cart} slug={slug} go={go} shippingSettings={shippingSettings} requirePhoneVerification={storeSettings.requirePhoneVerification} onOrder={handleOrderPlaced}/>
   else if(section==="order-confirmation")page=<Confirmation order={getCommerceOrders().find(o=>o.id===detail)||lastOrder} go={go} slug={slug}/>
   else if(section==="track-order")page=<Tracking orders={getCommerceOrders()} initial={lastOrder}/>
   else if(["about","contact","shipping-policy","returns","privacy","terms"].includes(section))page=<Policy type={section} theme={theme}/>
@@ -453,7 +479,9 @@ function Home({theme,products,go,slug,config}:{theme:typeof themeDefinitions[0];
     ?(config.decorRoomFocus?`${config.decorRoomFocus.toUpperCase()} FOCUS`:"ROOM FOCUS")
     :(config.retailDealHighlight||"FLASH PICKS")
 
-  return <main className={`home-layout home-${theme.id}`}>
+  const furnitureLayoutClass=theme.id==="furniture"&&config.furnitureLayout?` furniture-layout-${config.furnitureLayout.toLowerCase().replaceAll(" ","-")}`:""
+
+  return <main className={`home-layout home-${theme.id}${furnitureLayoutClass}`}>
     <section className="store-hero">
       <img src={theme.heroImage} alt={`${theme.label} collection`}/>
       <div>
@@ -500,6 +528,21 @@ function ProductCard({p,go,slug,config}:{p:Product;go:(x:string)=>void;slug:stri
   const showPrice = config?.cardShowPrice ?? true
   const showDetails = config?.cardShowDetails ?? true
   const actionText = config?.cardActionText || "View product"
+  const activeThemeId = config?.themeId
+  const showSizes =
+    activeThemeId === "shoes"
+      ? (config?.shoesHighlightSizes ?? true)
+      : activeThemeId === "grocery"
+      ? (config?.groceryShowQuantity ?? true)
+      : true
+  const showSpecNote =
+    activeThemeId === "electronics"
+      ? (config?.techShowSpecs ?? true)
+      : activeThemeId === "beauty"
+      ? (config?.beautyShowRoutine ?? true)
+      : activeThemeId === "decor"
+      ? (config?.decorShowTextures ?? true)
+      : true
 
   return (
     <button
@@ -519,10 +562,18 @@ function ProductCard({p,go,slug,config}:{p:Product;go:(x:string)=>void;slug:stri
           {money(p.sale||p.price)} {showBadge && <del>{money(p.price)}</del>}
         </p>
       )}
-      {showDetails && (
+      {showDetails && (showSizes || showSpecNote) && (
         <div className="product-extra">
-          <span>{p.sizes.split(",").slice(0,3).join(" · ")}</span>
-          <b>{p.description.split("·")[0]}</b>
+          {showSizes && (
+            <span style={activeThemeId === "shoes" && config?.shoesHighlightSizes ? { fontWeight: 700, color: "var(--store-accent)" } : undefined}>
+              {p.sizes.split(",").slice(0,3).join(" · ")}
+            </span>
+          )}
+          {showSpecNote && (
+            <b style={activeThemeId === "decor" ? { display: "block" } : undefined}>
+              {activeThemeId === "decor" ? `${p.color} · ${p.description.split("·")[0]}` : p.description.split("·")[0]}
+            </b>
+          )}
         </div>
       )}
     </button>
@@ -531,6 +582,7 @@ function ProductCard({p,go,slug,config}:{p:Product;go:(x:string)=>void;slug:stri
 function Catalog({products,query,go,slug,category,config}:{products:Product[];query:string;go:(p:string)=>void;slug:string;category?:string;config?:ReturnType<typeof getStoreThemeConfig>}){
   const highest=Math.max(3000,...products.map(product=>product.sale||product.price))
   const [sort,setSort]=useState("featured"),[available,setAvailable]=useState(false),[max,setMax]=useState(highest)
+  useEffect(()=>{setMax(highest)},[highest])
   const categories=[...new Set(products.map(product=>product.category))]
   let shown=products.filter(p=>(!query||p.name.toLowerCase().includes(query.toLowerCase()))&&(!category||p.category.toLowerCase().replaceAll(" ","-")===category)&&(!available||p.stock>0)&&(p.sale||p.price)<=max)
   if(sort==="low")shown=[...shown].sort((a,b)=>(a.sale||a.price)-(b.sale||b.price))
@@ -538,25 +590,69 @@ function Catalog({products,query,go,slug,category,config}:{products:Product[];qu
 }
 function ProductDetail({product,add,go,slug}:{product:Product;add:(p:Product,v:string,q:number)=>void;go:(p:string)=>void;slug:string}){
   const [variant,setVariant]=useState(""),[qty,setQty]=useState(1),[error,setError]=useState("")
-  const addNow=(buy=false)=>{if(!variant){setError("Choose a size and color before adding this product.");return}add(product,variant,qty);setError("");if(buy)go(`/store/${slug}/checkout`)}
+  const outOfStock=product.stock<=0
+  const addNow=(buy=false)=>{if(outOfStock){setError("This product is currently out of stock.");return}if(!variant){setError("Choose a size and color before adding this product.");return}add(product,variant,qty);setError("");if(buy)go(`/store/${slug}/checkout`)}
   const variants=product.sizes.split(",").map(size=>`${product.color} / ${size.trim()}`)
-  return <main className="product-detail"><div className="product-images"><img src={product.image||images[0]} alt={product.name}/><div><img src={product.image||images[0]} alt={`${product.name} alternate crop`}/><img src={product.image||images[0]} alt={`${product.name} detail crop`}/></div></div><section><span>{product.category}</span><h1>{product.name}</h1><div className="detail-price">{money(product.sale||product.price)} {product.sale>0&&<del>{money(product.price)}</del>}</div><p>{product.description}</p><small>SKU: {product.sku} · {product.stock} available</small><fieldset><legend>Choose option</legend><div>{variants.map(v=><button className={variant===v?"selected":""} onClick={()=>setVariant(v)} key={v}>{v}</button>)}</div></fieldset>{error&&<div className="store-error">{error}</div>}<div className="buy-row"><div><button aria-label="Decrease quantity" onClick={()=>setQty(Math.max(1,qty-1))}>−</button><span>{qty}</span><button aria-label="Increase quantity" onClick={()=>setQty(Math.min(product.stock,qty+1))}>＋</button></div><button onClick={()=>addNow(false)}>Add to bag</button></div><button className="buy-now" onClick={()=>addNow(true)}>Buy now</button><details open><summary>Product information</summary><p>{product.description}</p></details><details><summary>Delivery, warranty & returns</summary><p>Store-specific fulfillment information is shown here in this frontend prototype.</p></details></section></main>
+  return <main className="product-detail"><div className="product-images"><img src={product.image||images[0]} alt={product.name}/><div><img src={product.image||images[0]} alt={`${product.name} alternate crop`}/><img src={product.image||images[0]} alt={`${product.name} detail crop`}/></div></div><section><span>{product.category}</span><h1>{product.name}</h1><div className="detail-price">{money(product.sale||product.price)} {product.sale>0&&<del>{money(product.price)}</del>}</div><p>{product.description}</p><small>SKU: {product.sku} · {outOfStock?"Out of stock":`${product.stock} available`}</small><fieldset><legend>Choose option</legend><div>{variants.map(v=><button className={variant===v?"selected":""} onClick={()=>setVariant(v)} key={v}>{v}</button>)}</div></fieldset>{error&&<div className="store-error">{error}</div>}<div className="buy-row"><div><button aria-label="Decrease quantity" disabled={outOfStock} onClick={()=>setQty(Math.max(1,qty-1))}>−</button><span>{outOfStock?0:qty}</span><button aria-label="Increase quantity" disabled={outOfStock||qty>=product.stock} onClick={()=>setQty(Math.min(product.stock,qty+1))}>＋</button></div><button disabled={outOfStock} onClick={()=>addNow(false)}>{outOfStock?"Out of stock":"Add to bag"}</button></div><button className="buy-now" disabled={outOfStock} onClick={()=>addNow(true)}>Buy now</button><details open><summary>Product information</summary><p>{product.description}</p></details><details><summary>Delivery, warranty & returns</summary><p>Store-specific fulfillment information is shown here in this frontend prototype.</p></details></section></main>
 }
-function Cart({cart,save,go,slug}:{cart:CartItem[];save:(c:CartItem[])=>void;go:(p:string)=>void;slug:string}){
-  const subtotal=cart.reduce((a,i)=>a+(i.product.sale||i.product.price)*i.quantity,0),shipping=subtotal>=3000?0:120
+function Cart({cart,save,go,slug,shippingSettings}:{cart:CartItem[];save:(c:CartItem[])=>void;go:(p:string)=>void;slug:string;shippingSettings:ReturnType<typeof getShippingSettings>}){
+  const subtotal=cart.reduce((a,i)=>a+(i.product.sale||i.product.price)*i.quantity,0)
+  const qualifiesFree=shippingSettings.freeShippingEnabled&&subtotal>=shippingSettings.freeShippingThreshold
+  const shipping=qualifiesFree?0:shippingSettings.insideDhakaRate
   if(!cart.length)return <main className="store-empty cart-empty"><b>Your bag is waiting.</b><span>Explore the collection and add something you love.</span><button onClick={()=>go(`/store/${slug}/products`)}>Continue shopping</button></main>
   return <main className="cart-page"><h1>Shopping bag</h1><div className="cart-layout"><section>{cart.map((item,index)=><article className="cart-item" key={`${item.product.id}-${item.variant}`}><img src={item.product.image} alt={item.product.name}/><div><strong>{item.product.name}</strong><span>{item.variant}</span><button onClick={()=>save(cart.filter((_,i)=>i!==index))}>Remove</button></div><div className="cart-qty"><button onClick={()=>save(cart.map((x,i)=>i===index?{...x,quantity:Math.max(1,x.quantity-1)}:x))}>−</button><span>{item.quantity}</span><button disabled={item.quantity>=item.product.stock} onClick={()=>save(cart.map((x,i)=>i===index?{...x,quantity:x.quantity+1}:x))}>＋</button></div><b>{money((item.product.sale||item.product.price)*item.quantity)}</b></article>)}</section><aside><h2>Order summary</h2><dl><div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div><div><dt>Estimated delivery</dt><dd>{shipping?money(shipping):"Free"}</dd></div><div><dt>Total</dt><dd>{money(subtotal+shipping)}</dd></div></dl><button onClick={()=>go(`/store/${slug}/checkout`)}>Proceed to checkout</button><button onClick={()=>go(`/store/${slug}/products`)}>Continue shopping</button></aside></div></main>
 }
-function Checkout({cart,slug,go,onOrder}:{cart:CartItem[];slug:string;go:(p:string)=>void;onOrder:(o:CommerceOrder)=>void}){
+function Checkout({cart,slug,go,onOrder,shippingSettings,requirePhoneVerification}:{cart:CartItem[];slug:string;go:(p:string)=>void;onOrder:(o:CommerceOrder)=>void;shippingSettings:ReturnType<typeof getShippingSettings>;requirePhoneVerification:boolean}){
   const [review,setReview]=useState<Record<string,string>|null>(null),[placing,setPlacing]=useState(false),[error,setError]=useState("")
-  const subtotal=cart.reduce((a,i)=>a+(i.product.sale||i.product.price)*i.quantity,0),shipping=subtotal>=3000?0:120,total=subtotal+shipping
-  const submit=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const d=new FormData(e.currentTarget),data=Object.fromEntries(d.entries()) as Record<string,string>;if(!/^01\d{9}$/.test(data.phone.replaceAll(" ",""))){setError("Enter a valid 11-digit Bangladesh phone number.");return}if(data.email&&!data.email.includes("@")){setError("Enter a valid email address.");return}setError("");setReview(data)}
-  const place=()=>{if(placing||!review)return;setPlacing(true);const id=`SN-${Date.now().toString().slice(-6)}`;const order:CommerceOrder={id,store:slug,customer:review.name,phone:review.phone,email:review.email,address:review.address,city:review.city,items:cart.map(i=>({id:i.product.id,name:i.product.name,variant:i.variant,quantity:i.quantity,price:i.product.sale||i.product.price})),subtotal,shipping,total,payment:review.payment,status:"Pending",date:new Date().toLocaleString("en-BD")};onOrder(order);go(`/store/${slug}/order-confirmation/${id}`)}
+  const [city,setCity]=useState("Dhaka")
+  const [deliveryMethod,setDeliveryMethod]=useState<"standard"|"express"|"pickup">("standard")
+  const subtotal=cart.reduce((a,i)=>a+(i.product.sale||i.product.price)*i.quantity,0)
+  const qualifiesFree=shippingSettings.freeShippingEnabled&&subtotal>=shippingSettings.freeShippingThreshold
+  const baseRate=city==="Dhaka"?shippingSettings.insideDhakaRate:shippingSettings.outsideDhakaRate
+  const shipping=deliveryMethod==="pickup"?0:deliveryMethod==="express"?shippingSettings.expressDeliveryRate:(qualifiesFree?0:baseRate)
+  const total=subtotal+shipping
+  const submit=(e:FormEvent<HTMLFormElement>)=>{
+    e.preventDefault()
+    const d=new FormData(e.currentTarget),data=Object.fromEntries(d.entries()) as Record<string,string>
+    const normalizedPhone=data.phone.replace(/[^0-9]/g,"")
+    const phonePattern=requirePhoneVerification?/^01[3-9]\d{8}$/:/^01\d{9}$/
+    if(!phonePattern.test(normalizedPhone)){setError("Enter a valid 11-digit Bangladesh phone number (e.g. 017XXXXXXXX).");return}
+    if(data.email&&!data.email.includes("@")){setError("Enter a valid email address.");return}
+    setError("")
+    setReview(data)
+  }
+  const place=async()=>{
+    if(placing||!review)return
+    setPlacing(true)
+    let id=`SN-${Date.now().toString().slice(-6)}`
+    if(isBackendEnabled()){
+      try{
+        const created=await shopnestApi.storefront.checkout(slug,{
+          customerName:review.name,
+          phone:review.phone,
+          email:review.email||undefined,
+          address:review.address,
+          city:review.city,
+          area:review.area||undefined,
+          deliveryMethod,
+          paymentMethod:review.payment,
+          notes:review.notes||undefined,
+          items:cart.map(i=>({productId:String(i.product.id),variant:i.variant,quantity:i.quantity})),
+        }) as {orderNumber?:string} | null
+        if(created?.orderNumber) id=created.orderNumber
+      }catch{
+        // fallback to local prototype order if backend is unavailable
+      }
+    }
+    const order:CommerceOrder={id,store:slug,customer:review.name,phone:review.phone,email:review.email,address:review.address,city:review.city,items:cart.map(i=>({id:i.product.id,name:i.product.name,variant:i.variant,quantity:i.quantity,price:i.product.sale||i.product.price})),subtotal,shipping,total,payment:review.payment,status:"Pending",date:new Date().toLocaleString("en-BD")}
+    onOrder(order)
+    go(`/store/${slug}/order-confirmation/${id}`)
+  }
   if(!cart.length)return <main className="store-empty"><b>Your cart is empty</b><button onClick={()=>go(`/store/${slug}/products`)}>Browse products</button></main>
   if(review)return <main className="checkout-page"><button className="checkout-back" onClick={()=>setReview(null)}>← Edit details</button><h1>Review your order</h1><div className="checkout-layout"><section><div className="checkout-card"><h2>Delivery</h2><p><strong>{review.name}</strong><br/>{review.phone}<br/>{review.address}, {review.city}</p></div><div className="checkout-card"><h2>Payment</h2><p>{review.payment}</p>{review.payment!=="Cash on delivery"&&<p className="manual-note">Customer payment instructions are store-specific and separate from ShopNest subscription billing.</p>}</div></section><OrderBox cart={cart} subtotal={subtotal} shipping={shipping} total={total}><button disabled={placing} onClick={place}>{placing?"Placing mock order…":"Place demo order"}</button></OrderBox></div></main>
-  return <main className="checkout-page"><span>GUEST CHECKOUT</span><h1>Delivery details</h1><form onSubmit={submit} className="checkout-layout"><section className="checkout-card checkout-form"><label>Full name<input name="name" required/></label><div><label>Phone<input name="phone" required placeholder="01XXXXXXXXX"/></label><label>Email <small>Optional</small><input name="email" type="email"/></label></div><label>Delivery address<textarea name="address" required/></label><div><label>City or district<select name="city"><option>Dhaka</option><option>Chattogram</option><option>Sylhet</option><option>Rajshahi</option></select></label><label>Area / postal code<input name="area" required/></label></div><label>Delivery method<select name="delivery"><option>Standard delivery — {shipping?money(shipping):"Free"}</option></select></label><label>Payment method<select name="payment"><option>Cash on delivery</option><option>Store mobile payment</option></select></label><label>Order notes <small>Optional</small><textarea name="notes"/></label>{error&&<div className="store-error">{error}</div>}<button>Review order</button></section><OrderBox cart={cart} subtotal={subtotal} shipping={shipping} total={total}/></form></main>
+  return <main className="checkout-page"><span>GUEST CHECKOUT</span><h1>Delivery details</h1><form onSubmit={submit} className="checkout-layout"><section className="checkout-card checkout-form"><label>Full name<input name="name" required/></label><div><label>Phone<input name="phone" required placeholder="01XXXXXXXXX"/></label><label>Email <small>Optional</small><input name="email" type="email"/></label></div><label>Delivery address<textarea name="address" required/></label><div><label>City or district<select name="city" value={city} onChange={e=>setCity(e.target.value)}><option>Dhaka</option><option>Chattogram</option><option>Sylhet</option><option>Rajshahi</option></select></label><label>Area / postal code<input name="area" required/></label></div><label>Delivery method<select name="delivery" value={deliveryMethod} onChange={e=>setDeliveryMethod(e.target.value as "standard"|"express"|"pickup")}><option value="standard">Standard delivery ({city}) — {qualifiesFree?"Free":money(baseRate)}</option>{shippingSettings.expressDeliveryEnabled&&city==="Dhaka"&&<option value="express">Express Same-Day — {money(shippingSettings.expressDeliveryRate)}</option>}{shippingSettings.pickupEnabled&&<option value="pickup">Store Pickup — Free ({shippingSettings.pickupAddress})</option>}</select></label><label>Payment method<select name="payment"><option>Cash on delivery</option><option>Store mobile payment</option></select></label><label>Order notes <small>Optional</small><textarea name="notes"/></label>{error&&<div className="store-error">{error}</div>}<button>Review order</button></section><OrderBox cart={cart} subtotal={subtotal} shipping={shipping} total={total}/></form></main>
 }
-function OrderBox({cart,subtotal,shipping,total,children}:{cart:CartItem[];subtotal:number;shipping:number;total:number;children?:React.ReactNode}){return <aside className="order-box"><h2>Your order</h2>{cart.map(i=><div className="order-box-item" key={i.product.id}><img src={i.product.image} alt=""/><span>{i.product.name}<small>{i.variant} · Qty {i.quantity}</small></span><b>{money((i.product.sale||i.product.price)*i.quantity)}</b></div>)}<dl><div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div><div><dt>Shipping</dt><dd>{shipping?money(shipping):"Free"}</dd></div><div><dt>Total</dt><dd>{money(total)}</dd></div></dl>{children}</aside>}
+function OrderBox({cart,subtotal,shipping,total,children}:{cart:CartItem[];subtotal:number;shipping:number;total:number;children?:React.ReactNode}){return <aside className="order-box"><h2>Your order</h2>{cart.map(i=><div className="order-box-item" key={`${i.product.id}-${i.variant}`}><img src={i.product.image} alt=""/><span>{i.product.name}<small>{i.variant} · Qty {i.quantity}</small></span><b>{money((i.product.sale||i.product.price)*i.quantity)}</b></div>)}<dl><div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div><div><dt>Shipping</dt><dd>{shipping?money(shipping):"Free"}</dd></div><div><dt>Total</dt><dd>{money(total)}</dd></div></dl>{children}</aside>}
 function Confirmation({order,go,slug}:{order:CommerceOrder|null;go:(p:string)=>void;slug:string}){if(!order)return <main className="store-empty"><b>Order not found</b></main>;return <main className="confirmation-page"><div>✓</div><span>DEMO ORDER CONFIRMED</span><h1>Thank you, {order.customer}.</h1><p>Your mock order <strong>#{order.id}</strong> has been created in this browser. No real order was transmitted.</p><section><div><h2>Delivery details</h2><p>{order.address}, {order.city}<br/>{order.phone}</p></div><div><h2>Order total</h2><strong>{money(order.total)}</strong><p>{order.payment}</p></div></section><button onClick={()=>go(`/store/${slug}/track-order`)}>Track this order</button><button onClick={()=>go(`/store/${slug}`)}>Return to store</button></main>}
 function Tracking({orders,initial}:{orders:CommerceOrder[];initial:CommerceOrder|null}){const [id,setId]=useState(initial?.id||""),[phone,setPhone]=useState(initial?.phone||""),[found,setFound]=useState<CommerceOrder|null>(initial),[searched,setSearched]=useState(false);const search=(e:FormEvent)=>{e.preventDefault();setFound(orders.find(o=>o.id.toLowerCase()===id.toLowerCase()&&o.phone.replaceAll(" ","")===phone.replaceAll(" ",""))||null);setSearched(true)};const steps=["Pending","Confirmed","Processing","Shipped","Out for delivery","Delivered"],position=Math.max(0,steps.indexOf(found?.status||"Pending"));return <main className="tracking-page"><span>ORDER TRACKING</span><h1>Where is your order?</h1><form onSubmit={search}><label>Order number<input value={id} onChange={e=>setId(e.target.value)} placeholder="SN-123456"/></label><label>Phone number<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="01XXXXXXXXX"/></label><button>Track order</button></form>{searched&&!found&&<div className="store-error">We couldn’t match that order and phone number.</div>}{found&&<section><div className="tracking-head"><div><span>Order #{found.id}</span><strong>{found.status}</strong></div><b>{money(found.total)}</b></div><div className="tracking-steps">{steps.map((s,i)=><div className={i<=position?"done":""} key={s}><i>{i<position?"✓":i+1}</i><span><strong>{s}</strong><small>{i<=position?"Prototype status recorded":"Waiting"}</small></span></div>)}</div></section>}</main>}
 function Policy({type,theme}:{type:string;theme:typeof themeDefinitions[0]}){const titles:Record<string,string>={about:`About ${theme.name}`,contact:"Contact us","shipping-policy":"Shipping policy",returns:"Returns & refunds",privacy:"Privacy policy",terms:"Terms & conditions"};return <main className="policy-page"><span>STORE INFORMATION</span><h1>{titles[type]}</h1><p>This is sample policy content for the ShopNest frontend prototype. Store owners can replace it from settings after a backend content service is connected.</p><h2>Clear, straightforward information</h2><p>We aim to make shopping simple and transparent. Delivery estimates, eligibility, and product-specific requirements are shown before checkout.</p><h2>Questions?</h2><p>Contact hello@example-store.test or call the fictional support line shown in the store settings.</p></main>}

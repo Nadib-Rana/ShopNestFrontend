@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
-import { getStoreThemeConfig, saveStoreThemeConfig, StoreThemeConfig, themeDefaults } from "@/themeStore"
+import { getStoreThemeConfig, saveStoreThemeConfig, StoreThemeConfig, themeDefaults } from "@/repositories/themeStore"
 import CustomerStorefront from "@/features/storefront/CustomerStorefront"
 import ThemeStudio from "@/features/themes/ThemeStudio"
 import PublicThemesPage from "@/features/themes/PublicThemesPage"
@@ -312,5 +312,22 @@ describe("Themes & Customization", () => {
     expect(getByText("© 2026 Trendora Fashion Labs. All rights reserved.")).toBeInTheDocument()
     expect(getByText("Subscribe for VIP Drops")).toBeInTheDocument()
     expect(getByText("Get VIP Access")).toBeInTheDocument()
+  })
+
+  it("applies theme-specific toggles (shoes sizes, tech specs, decor textures, furniture layout)", () => {
+    saveStoreThemeConfig({ ...themeDefaults("shoes", "demo"), storeSlug: "demo", shoesHighlightSizes: false })
+    const shoesRes = render(<CustomerStorefront path="/store/demo" go={() => {}} />)
+    expect(shoesRes.container.querySelector(".product-extra span")).not.toBeInTheDocument()
+    shoesRes.unmount()
+
+    saveStoreThemeConfig({ ...themeDefaults("electronics", "demo"), storeSlug: "demo", techShowSpecs: false })
+    const techRes = render(<CustomerStorefront path="/store/demo" go={() => {}} />)
+    expect(techRes.container.querySelector(".product-extra b")).not.toBeInTheDocument()
+    techRes.unmount()
+
+    saveStoreThemeConfig({ ...themeDefaults("furniture", "demo"), storeSlug: "demo", furnitureLayout: "Architectural" })
+    const furRes = render(<CustomerStorefront path="/store/demo" go={() => {}} />)
+    expect(furRes.container.querySelector(".furniture-layout-architectural")).toBeInTheDocument()
+    furRes.unmount()
   })
 })
