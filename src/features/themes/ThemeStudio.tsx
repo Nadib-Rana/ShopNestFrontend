@@ -80,7 +80,11 @@ export default function ThemeStudio({path,go,notify}:{path:string;go:(p:string)=
     persistTheme(next);
     setSaved(next);
     if (canCallProtectedApi()) {
-      void shopnestApi.themes.switchTheme(id).catch(() => undefined)
+      void shopnestApi.themes
+        .switchTheme(id)
+        .then(() => notify(`${themeDefinitions.find(t=>t.id===id)?.title} applied`))
+        .catch((err) => notify(err instanceof Error ? err.message : "Failed to switch theme on server."))
+      return
     }
     notify(`${themeDefinitions.find(t=>t.id===id)?.title} applied`)
   }

@@ -28,7 +28,13 @@ export function StorefrontPage({
     }
     setConfig(next)
     if (canCallProtectedApi()) {
-      void shopnestApi.themes.publish().catch(() => undefined)
+      void shopnestApi.themes
+        .publish()
+        .then(() => onAction(`${activeTheme.title} published to your storefront`))
+        .catch((err) =>
+          onAction(err instanceof Error ? err.message : "Failed to publish theme to server."),
+        )
+      return
     }
     onAction(`${activeTheme.title} published to your storefront`)
   }

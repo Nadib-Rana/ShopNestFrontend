@@ -65,7 +65,14 @@ export default function ShippingPage({ notify }: ShippingPageProps) {
           defaultCourier: settings.defaultCourier,
           specialNotes: settings.specialNotes,
         })
-        .catch(() => undefined)
+        .then(() => {
+          setIsDirty(false)
+          notify("Shipping and delivery settings saved successfully.")
+        })
+        .catch((err) => {
+          notify(err instanceof Error ? err.message : "Failed to save shipping settings.")
+        })
+      return
     }
     setIsDirty(false)
     notify("Shipping and delivery settings saved successfully.")
@@ -77,7 +84,16 @@ export default function ShippingPage({ notify }: ShippingPageProps) {
       setSettings(defaultShippingSettings)
       saveShippingSettings(defaultShippingSettings)
       if (canCallProtectedApi()) {
-        void shopnestApi.shipping.reset().catch(() => undefined)
+        void shopnestApi.shipping
+          .reset()
+          .then(() => {
+            setIsDirty(false)
+            notify("Shipping settings reset to defaults.")
+          })
+          .catch((err) => {
+            notify(err instanceof Error ? err.message : "Failed to reset shipping settings.")
+          })
+        return
       }
       setIsDirty(false)
       notify("Shipping settings reset to defaults.")

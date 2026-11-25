@@ -282,7 +282,9 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
               description: p.description,
             }
             if (p.id && targetDbId) {
-              void shopnestApi.products.update(targetDbId, payload).catch(() => undefined)
+              void shopnestApi.products
+                .update(targetDbId, payload)
+                .catch((err) => notify(err instanceof Error ? err.message : "Failed to update product on server."))
             } else {
               void shopnestApi.products
                 .create(payload)
@@ -292,7 +294,10 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
                     setProducts((prev) => prev.map((x) => (x.id === tempId ? { ...x, dbId: String(dbId) } : x)))
                   }
                 })
-                .catch(() => undefined)
+                .catch((err) => {
+                  setProducts((prev) => prev.filter((x) => x.id !== tempId))
+                  notify(err instanceof Error ? err.message : "Failed to create product on server.")
+                })
             }
           }
           notify(p.id ? "Product updated" : "Product added")
@@ -319,7 +324,7 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
           if (backendLive) {
             void shopnestApi.orders
               .updateStatus(foundOrder.dbId || detail, status.toUpperCase().replaceAll(" ", "_"))
-              .catch(() => undefined)
+              .catch((err) => notify(err instanceof Error ? err.message : "Failed to update order status."))
           }
           notify(`Order moved to ${status}`)
         }}
@@ -349,7 +354,9 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
               status: item.status.toUpperCase(),
             }
             if (item.id && item.dbId) {
-              void shopnestApi.categories.update(item.dbId, payload).catch(() => undefined)
+              void shopnestApi.categories
+                .update(item.dbId, payload)
+                .catch((err) => notify(err instanceof Error ? err.message : "Failed to update category."))
             } else {
               void shopnestApi.categories
                 .create(payload)
@@ -359,7 +366,10 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
                     setCategories((prev) => prev.map((c) => (c.id === tempId ? { ...c, dbId: String(dbId) } : c)))
                   }
                 })
-                .catch(() => undefined)
+                .catch((err) => {
+                  setCategories((prev) => prev.filter((c) => c.id !== tempId))
+                  notify(err instanceof Error ? err.message : "Failed to create category.")
+                })
             }
           }
         }}
@@ -367,7 +377,12 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
           const target = categories.find((c) => c.id === id)
           setCategories((prev) => prev.filter((c) => c.id !== id))
           if (backendLive && target?.dbId) {
-            void shopnestApi.categories.remove(target.dbId).catch(() => undefined)
+            void shopnestApi.categories
+              .remove(target.dbId)
+              .catch((err) => {
+                if (target) setCategories((prev) => [target, ...prev])
+                notify(err instanceof Error ? err.message : "Failed to delete category.")
+              })
           }
         }}
       />
@@ -429,7 +444,9 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
               const dbIds = products.filter((p) => selected.includes(p.id) && p.dbId).map((p) => p.dbId as string)
               setProducts((prev) => prev.map((p) => (selected.includes(p.id) ? { ...p, status: "Active" } : p)))
               if (backendLive && dbIds.length > 0) {
-                void shopnestApi.products.bulkStatus(dbIds, "ACTIVE").catch(() => undefined)
+                void shopnestApi.products
+                  .bulkStatus(dbIds, "ACTIVE")
+                  .catch((err) => notify(err instanceof Error ? err.message : "Failed to update product statuses."))
               }
               setSelected([])
             }}
@@ -470,7 +487,9 @@ export default function SellerManagement({ path, go, notify }: { path: string; g
             const dbIds = products.filter((p) => selected.includes(p.id) && p.dbId).map((p) => p.dbId as string)
             setProducts((prev) => prev.filter((p) => !selected.includes(p.id)))
             if (backendLive && dbIds.length > 0) {
-              void shopnestApi.products.bulkDelete(dbIds).catch(() => undefined)
+              void shopnestApi.products
+                .bulkDelete(dbIds)
+                .catch((err) => notify(err instanceof Error ? err.message : "Failed to delete selected products."))
             }
             setSelected([])
             setDialog(null)
@@ -585,7 +604,9 @@ function Inventory({products,setProducts,movements,setMovements,backendLive,quer
               ...prev,
             ])
             if (backendLive && adjust.dbId) {
-              void shopnestApi.products.adjustStock(adjust.dbId, amount, note).catch(() => undefined)
+              void shopnestApi.products
+                .adjustStock(adjust.dbId, amount, note)
+                .catch((err) => notify(err instanceof Error ? err.message : "Failed to adjust stock on server."))
             }
             setAdjust(null)
             notify(`Stock adjusted: ${amount > 0 ? "+" : ""}${amount} · ${note}`)

@@ -90,5 +90,51 @@ describe("apiClient", () => {
       ),
     ).rejects.toThrow(ApiError)
   })
+
+  it("P2-4: deduplicates concurrent 401 refreshes into a single /auth/refresh request", async () => {
+    setAuthTokens("expired-token", "valid-refresh")
+    let refreshCalls = 0
+
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith("/auth/refresh")) {
+        refreshCalls += 1
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ "content-type": "application/json" }),
+          json: async () => ({
+            success: true,
+            data: { accessToken: "shared-fresh-token", refreshToken: "shared-fresh-refresh" },
+          }),
+        })
+      }
+      const authHeader = (init?.headers as Headers)?.get("Authorization")
+      if (authHeader === "Bearer expired-token") {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          headers: new Headers({ "content-type": "application/json" }),
+          json: async () => ({ message: "Unauthorized" }),
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => ({ success: true, data: { url } }),
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const results = await Promise.all([
+      apiClient.get<{ url: string }>("/seller/products", { baseUrl: "http://localhost:3000/api/v1" }),
+      apiClient.get<{ url: string }>("/seller/orders", { baseUrl: "http://localhost:3000/api/v1" }),
+      apiClient.get<{ url: string }>("/seller/customers", { baseUrl: "http://localhost:3000/api/v1" }),
+    ])
+
+    expect(refreshCalls).toBe(1)
+    expect(results).toHaveLength(3)
+    expect(getAccessToken()).toBe("shared-fresh-token")
+  })
 })
 

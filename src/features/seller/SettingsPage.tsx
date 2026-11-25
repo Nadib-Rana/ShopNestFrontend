@@ -49,7 +49,16 @@ export default function SettingsPage({ notify }: SettingsPageProps) {
 
     saveStoreSettings(settings)
     if (canCallProtectedApi()) {
-      void shopnestApi.settings.update(settings).catch(() => undefined)
+      void shopnestApi.settings
+        .update(settings)
+        .then(() => {
+          setIsDirty(false)
+          notify("Store settings have been saved successfully.")
+        })
+        .catch((err) => {
+          notify(err instanceof Error ? err.message : "Failed to save settings to server.")
+        })
+      return
     }
     setIsDirty(false)
     notify("Store settings have been saved successfully.")
@@ -58,7 +67,18 @@ export default function SettingsPage({ notify }: SettingsPageProps) {
   const handleResetToDefaults = () => {
     const defaults = resetStoreSettings()
     if (canCallProtectedApi()) {
-      void shopnestApi.settings.reset().catch(() => undefined)
+      void shopnestApi.settings
+        .reset()
+        .then(() => {
+          setSettings(defaults)
+          setIsDirty(false)
+          setResetConfirmOpen(false)
+          notify("Store settings restored to default presets.")
+        })
+        .catch((err) => {
+          notify(err instanceof Error ? err.message : "Failed to reset settings on server.")
+        })
+      return
     }
     setSettings(defaults)
     setIsDirty(false)

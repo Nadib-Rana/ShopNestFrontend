@@ -27,15 +27,13 @@ export function isUserRegistered(): boolean {
 export function setRegisteredUser(user: RegisteredUser): void {
   try {
     const existing = getRegisteredUser()
-    const inferredRole: UserRole =
-      user.role ||
-      (user.email?.toLowerCase().includes("admin") ? "admin" : existing?.role || "seller")
+    const resolvedRole: UserRole = user.role || existing?.role || "seller"
     localStorage.setItem(
       AUTH_KEY,
       JSON.stringify({
         ...existing,
         ...user,
-        role: inferredRole,
+        role: resolvedRole,
         registered: true,
         registeredAt: user.registeredAt || existing?.registeredAt || new Date().toISOString(),
       })

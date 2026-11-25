@@ -107,7 +107,11 @@ export function getActiveStoreSlug(): string {
 interface RequestOptions extends RequestInit {
   baseUrl?: string
   skipAuthRefresh?: boolean
+  timeoutMs?: number
 }
+
+const DEFAULT_TIMEOUT_MS = 15_000
+let inFlightRefresh: Promise<string | null> | null = null
 
 function unwrapEnvelope<T>(payload: unknown): T {
   if (
@@ -121,30 +125,69 @@ function unwrapEnvelope<T>(payload: unknown): T {
   return payload as T
 }
 
-async function attemptTokenRefresh(baseUrl: string): Promise<string | null> {
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<Response> {
+  if (timeoutMs <= 0 || init.signal) {
+    return fetch(url, init)
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError({
+        statusCode: 408,
+        message: "Request timed out. Please check your connection and try again.",
+        errorCode: "REQUEST_TIMEOUT",
+      })
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function performTokenRefresh(baseUrl: string): Promise<string | null> {
   const refreshToken = getRefreshToken()
   if (!refreshToken) return null
 
-  const res = await fetch(`${baseUrl}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
-  })
+  try {
+    const res = await fetchWithTimeout(`${baseUrl}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    })
 
-  if (!res.ok) {
-    clearAuthTokens()
+    if (!res.ok) {
+      clearAuthTokens()
+      return null
+    }
+
+    const json = await res.json()
+    const data = unwrapEnvelope<{ accessToken?: string; refreshToken?: string }>(json)
+    if (!data?.accessToken) {
+      clearAuthTokens()
+      return null
+    }
+
+    setAuthTokens(data.accessToken, data.refreshToken)
+    return data.accessToken
+  } catch {
     return null
   }
+}
 
-  const json = await res.json()
-  const data = unwrapEnvelope<{ accessToken?: string; refreshToken?: string }>(json)
-  if (!data?.accessToken) {
-    clearAuthTokens()
-    return null
+async function attemptTokenRefresh(baseUrl: string): Promise<string | null> {
+  if (!inFlightRefresh) {
+    inFlightRefresh = performTokenRefresh(baseUrl).finally(() => {
+      inFlightRefresh = null
+    })
   }
-
-  setAuthTokens(data.accessToken, data.refreshToken)
-  return data.accessToken
+  return inFlightRefresh
 }
 
 export async function apiRequest<T>(
@@ -154,6 +197,7 @@ export async function apiRequest<T>(
   const baseUrl = (options.baseUrl ?? getApiBaseUrl()).replace(/\/$/, "")
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`
   const url = `${baseUrl}${normalizedEndpoint}`
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
   const headers = new Headers(options.headers)
   if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
@@ -170,13 +214,13 @@ export async function apiRequest<T>(
     headers.set("x-store-id", activeStoreId)
   }
 
-  let response = await fetch(url, { ...options, headers })
+  let response = await fetchWithTimeout(url, { ...options, headers }, timeoutMs)
 
   if (response.status === 401 && !options.skipAuthRefresh) {
     const newAccessToken = await attemptTokenRefresh(baseUrl)
     if (newAccessToken) {
       headers.set("Authorization", `Bearer ${newAccessToken}`)
-      response = await fetch(url, { ...options, headers })
+      response = await fetchWithTimeout(url, { ...options, headers }, timeoutMs)
     }
   }
 
