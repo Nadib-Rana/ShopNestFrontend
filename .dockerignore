@@ -1,0 +1,14 @@
+node_modules
+dist
+Backend
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+e2e
+test-results
+playwright-report
+docs
+project-planning
+*.log
